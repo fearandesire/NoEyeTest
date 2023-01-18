@@ -118,11 +118,9 @@ async function runProgs() {
           "fg",
           "ft",
           "ins",
-          "jmp",
           "oiq",
           "pss",
           "reb",
-          "spd",
           "stre",
           "tp",
         ];
