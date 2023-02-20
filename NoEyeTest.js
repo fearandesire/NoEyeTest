@@ -174,9 +174,9 @@ async function runProgs() {
           }
           prog = bbgm.random.randInt(...progRange);
 
-          // ? A specific skill receiving a prog of 5 or more has a 70% chance of being changed
+          // ? A specific skill receiving a prog of 5 or more has a 30% chance of being changed
           if (prog >= 5) {
-            if (Math.random() < 0.7) {
+            if (Math.random() < 0.3) {
               prog = randomNum(1, 5);
             }
           }
