@@ -15,7 +15,6 @@ By taking into account the player's PER:
 
 # Todo
 
-- Add BBGM notifications per player so users can review the PER collected
 - Add _all_ PER stats for the season -- if a player is traded more than once mid-season, we will only receive the first 2 teams they played for.
 
 #### Credits
