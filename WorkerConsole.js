@@ -7,6 +7,8 @@ for (const p of players) {
   const age = Number(season) - Number(p.born.year);
   // Anyone above this age will be effected by `NoEyeTest`
   if (age > 25) {
+    p.note = "balanced";
+  } else {
     p.note = "classic";
   }
 }
