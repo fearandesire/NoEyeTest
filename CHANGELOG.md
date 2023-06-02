@@ -22,10 +22,6 @@
     -   Set max chance of God Prog to 9%
     -   Placed a scaling linear function. The worse the player, the higher the chance to God Prog
 
-### Deprecated
-
-### Removed
-
 ### Fixed
 
 -   God Progs min and max restrictions working as intended; Currently, God Progs will be random between 7 and 12
