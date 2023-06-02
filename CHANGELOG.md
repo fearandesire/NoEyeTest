@@ -5,7 +5,6 @@
 -   Set an OVR limit of 80 to the Prog Script. This is in an effort to incur balanced progressions
     -   Players that occasionally get calculated to prog over the OVR Limit will have their prog reduced to place them exactly at the limit
     -   `getAgeRange` function to assist `runProgs`
-    -
 
 ### Changed
 
