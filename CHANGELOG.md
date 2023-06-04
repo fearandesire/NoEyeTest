@@ -1,3 +1,11 @@
+## [3.0.1] - 2023-06-03
+
+### Changed
+
+-   Players with 20 or less PER will use the equation of `per / 5 - 6, per / 4 - 1`
+    -   This equates to more fair progressions for average players
+    -   Additionally, players who are above a League avg of PER are still rewarded with a lower chance of going down, while not diminishing the prog ranges for players who are top-tier, 20+ PER
+
 ## [3.0.0] - 2023-06-02
 
 ### Added
