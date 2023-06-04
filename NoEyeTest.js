@@ -56,8 +56,14 @@ function getProgRange(per, progOptions, restrictions) {
 	const { min1, min2, max1, max2, hardMin, hardMax, ovr, age } =
 		progOptions || {};
 	console.log(progOptions);
-	min = Math.round(per / min1) - min2;
-	max = Math.round(per / max1) - max2 || 2;
+
+	if (per <= 20) {
+		min = Math.ceil(per / 5) - 6;
+		max = Math.ceil(per / 4) - 1;
+	} else {
+		min = Math.ceil(per / min1) - min2;
+		max = Math.ceil(per / max1) - max2 || 2;
+	}
 
 	if (hardMin) {
 		min = hardMin;
