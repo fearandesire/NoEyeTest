@@ -57,7 +57,7 @@ function getProgRange(per, progOptions, restrictions) {
 		progOptions || {};
 	console.log(progOptions);
 
-	if (per <= 20) {
+	if (per <= 20 && age < 31) {
 		min = Math.ceil(per / 5) - 6;
 		max = Math.ceil(per / 4) - 1;
 	} else {
