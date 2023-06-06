@@ -1,3 +1,10 @@
+## [3.0.2] - 2023-06-06
+
+### Fixed
+
+-   Set age of prog script takes affect to 25
+-   Fix for `ageRange` to be accessed by the notification system
+
 ## [3.0.1] - 2023-06-03
 
 ### Changed
