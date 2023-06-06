@@ -81,8 +81,11 @@ function getProgRange(per, progOptions, restrictions) {
 	return progRange;
 }
 
+let godProgCount = 0;
+let god;
+
 function getAgeRange(age) {
-	if (age >= 26 && age <= 30) {
+	if (age >= 25 && age <= 30) {
 		return '25-30';
 	} else if (age >= 31 && age <= 34) {
 		return '31-34';
@@ -90,9 +93,6 @@ function getAgeRange(age) {
 		return '35+';
 	}
 }
-
-let godProgCount = 0;
-let god;
 async function runProgs() {
 	const players = await bbgm.idb.cache.players.getAll(); // Collect all players in the game via the cache.
 	const SZN = bbgm.g.get('season');
@@ -139,6 +139,8 @@ async function runProgs() {
 			}
 			// ? Determine player age
 			const age = SZN - p.born.year;
+			let ageRange;
+			ageRange = getAgeRange(age);
 			// ? Declare variable to be used later
 			let progRange = [0, 0];
 			if (p.ratings.length > 1) {
@@ -159,8 +161,8 @@ async function runProgs() {
 
 				let progRange = [0, 0];
 				async function progs(data) {
-					const { age, per, ovr } = data;
-					const ageRange = getAgeRange(age);
+					const { age, per, ovr, name } = data;
+					console.log(`${name} - Age: ${age} - Range: ${ageRange}`);
 					if (ageRange === '25-30') {
 						progRange = getProgRange(per, {
 							min1: 5,
@@ -205,6 +207,7 @@ async function runProgs() {
 					age,
 					per,
 					ovr,
+					name: `${p.firstName} ${p.lastName}`,
 				});
 
 				// ! Section: God Progs
