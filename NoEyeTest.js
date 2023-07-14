@@ -55,7 +55,6 @@ function getProgRange(per, progOptions, restrictions) {
 	let max = 0;
 	const { min1, min2, max1, max2, hardMin, hardMax, ovr, age } =
 		progOptions || {};
-	console.log(progOptions);
 
 	if (per <= 20 && age < 31) {
 		min = Math.ceil(per / 5) - 6;
@@ -93,7 +92,7 @@ function getAgeRange(age) {
 		return '35+';
 	}
 }
-async function runProgs() {
+async function compileProgs() {
 	const players = await bbgm.idb.cache.players.getAll(); // Collect all players in the game via the cache.
 	const SZN = bbgm.g.get('season');
 	const seasonYr = SZN - 1;
@@ -258,9 +257,21 @@ async function runProgs() {
 
 				// ! Ensure player doesn't pass OVR cap
 				const ovrProgression = progRange[1] + ovr;
-				const ovrFlag = ovrProgression > 80;
-				if (ovrFlag) {
-					progRange[1] = ovrProgression - 80;
+				const flagLower = progRange[0] + ovr;
+				if (ovrProgression >= 80) {
+					let eq;
+
+					if (ovr >= 80) {
+						progRange[1] = 0;
+						progRange[0] = 0;
+					} else {
+						const diff = 80 - ovr;
+						// # Make the progRanges are whatever number it takes to get them to 80 based on their ovr
+						progRange[1] = diff;
+						if (flagLower) {
+							progRange[0] = diff;
+						}
+					}
 				}
 
 				// # Control which stats get progressed
@@ -347,5 +358,5 @@ const logGodProgs = async () => {
 	});
 };
 
-await runProgs(); // Run the script
+await compileProgs(); // Run the script
 await logGodProgs(); // Log the number of God Progs
