@@ -1,11 +1,12 @@
 /**
  * @fileoverview
- * NoEyeTest: BBGM Prog Script | v.2.0.0
+ * NoEyeTest: BBGM Prog Script | v.3.0.1
  * This script is used to calculate the 'Prog Range' (PR) for a player.
  * A prog range is how low, or high high a player can progress in the off-season.
  * The prog range is calculated by taking the player's PER from the previous season
  * Currently, this is designed for players 25+.
  *
+ * Please see the README on how to use this
  * Credits to TheProgMaestro for the original code this stemmed from, which I have now modified to create my own distirbution of it.
  */
 

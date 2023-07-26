@@ -2,6 +2,10 @@
 # Created by https://www.toptal.com/developers/gitignore/api/windows,visualstudiocode,node
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,visualstudiocode,node
 
+# Local Test Envio
+test1.js
+test2.js
+
 ### Node ###
 # Logs
 logs
