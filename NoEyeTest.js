@@ -1,12 +1,12 @@
 /**
  * @fileoverview
- * NoEyeTest: BBGM Prog Script | v.3.0.1
+ * NoEyeTest: BBGM Prog Script | v.3.1.0
  * This script is used to calculate the 'Prog Range' (PR) for a player.
  * A prog range is how low, or high high a player can progress in the off-season.
  * The prog range is calculated by taking the player's PER from the previous season
- * Currently, this is designed for players 25+.
- *
+ * Currently, this is designed for players 25+
  * Please see the README on how to use this
+ *
  * Credits to TheProgMaestro for the original code this stemmed from, which I have now modified to create my own distirbution of it.
  */
 
@@ -51,6 +51,11 @@ async function sendProgNotification(data) {
 	});
 }
 
+// From: https://stackoverflow.com/questions/4959975/generate-random-number-between-two-numbers-in-javascript
+function randomInt(min, max) {
+	return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
 function getProgRange(per, progOptions, restrictions) {
 	let min = 0;
 	let max = 0;
@@ -72,9 +77,37 @@ function getProgRange(per, progOptions, restrictions) {
 		max = hardMax;
 	}
 
-	// ? OVR Limit Enforcement
-	if (ovr >= 80) {
-		max = 0;
+	// ! Ensure player doesn't pass OVR cap
+	const ovrProgression = max + ovr;
+	const flagLower = min + ovr;
+	// Catch progs that would take them over 80
+	if (ovrProgression >= 80) {
+		let eq;
+		if (ovr >= 80) {
+			max = 0;
+			if (age > 30 && age < 35) {
+				min = -10;
+			}
+			if (age >= 35) {
+				min = -14;
+			}
+			if (age <= 30) {
+				const randomMin = randomInt(-2, 0);
+				if (randomMin < 0.02) {
+					min = -2;
+				}
+			}
+			if (min > max) {
+				min = 0;
+			}
+		} else {
+			const diff = 80 - ovr;
+			// # Make the progRanges are whatever number it takes to get them to 80 based on their ovr
+			max = diff;
+			if (flagLower >= 80) {
+				min = 0;
+			}
+		}
 	}
 
 	const progRange = [min, max];
@@ -103,8 +136,8 @@ async function compileProgs() {
 		const ageFlags = {};
 		ageFlags.thirty = false;
 		ageFlags.twentyFive = false;
-
-		if (p.note !== 'classic' && p.draft.year !== seasonYr) {
+		const name = `${p.firstName} ${p.lastName}`;
+		if (p.note === 'balanced' && p.draft.year !== seasonYr) {
 			const name = `${p.firstName} ${p.lastName}`;
 			let per = 0;
 			let ovr = 0;
@@ -122,9 +155,11 @@ async function compileProgs() {
 			}
 
 			if (playerStats.length > 1) {
-				per = Math.fround(
-					(playerStats[0].per + playerStats[1].per) / 2,
+				const totalPer = playerStats.reduce(
+					(sum, stat) => sum + stat.per,
+					0,
 				);
+				per = totalPer / playerStats.length;
 			} else if (playerStats.length === 1) {
 				per = Math.fround(playerStats[0].per);
 			}
@@ -159,31 +194,53 @@ async function compileProgs() {
 					ageFlags.thirty = true;
 				}
 
+				const minMaxes = {
+					'25-30': {
+						min1: 5,
+						min2: 7,
+						max1: 4,
+						max2: 2,
+						hardMax: 4,
+					},
+					'31-34': {
+						min1: 6,
+						min2: 7,
+						max1: 4,
+						max2: 3,
+						hardMax: 2,
+					},
+					'35+': { min1: 6, min2: 9, hardMax: 0 },
+				};
+
 				let progRange = [0, 0];
 				async function progs(data) {
 					const { age, per, ovr, name } = data;
-					console.log(`${name} - Age: ${age} - Range: ${ageRange}`);
 					if (ageRange === '25-30') {
+						const { min1, min2, max1, max2, hardMax } =
+							minMaxes[ageRange];
 						progRange = getProgRange(per, {
-							min1: 5,
-							min2: 7,
-							max1: 4,
-							max2: 2,
-							hardMax: 4,
+							min1,
+							min2,
+							max1,
+							max2,
+							hardMax,
 							ovr,
 							age,
 						});
 					} else if (ageRange === '31-34') {
+						const { min1, min2, max1, max2, hardMax } =
+							minMaxes[ageRange];
 						progRange = getProgRange(per, {
-							min1: 6,
-							min2: 7,
-							max1: 4,
-							max2: 3,
-							hardMax: 2,
+							min1,
+							min2,
+							max1,
+							max2,
+							hardMax,
 							ovr,
 							age,
 						});
 					} else if (ageRange === '35+') {
+						const { min1, min2, hardMax } = minMaxes[ageRange];
 						progRange = getProgRange(per, {
 							min1: 6,
 							min2: 9,
@@ -207,7 +264,7 @@ async function compileProgs() {
 					age,
 					per,
 					ovr,
-					name: `${p.firstName} ${p.lastName}`,
+					name,
 				});
 
 				// ! Section: God Progs
@@ -254,26 +311,7 @@ async function compileProgs() {
 					}
 				}
 
-				// ! Section: ProgControl
-
-				// ! Ensure player doesn't pass OVR cap
-				const ovrProgression = progRange[1] + ovr;
-				const flagLower = progRange[0] + ovr;
-				if (ovrProgression >= 80) {
-					let eq;
-
-					if (ovr >= 80) {
-						progRange[1] = 0;
-						progRange[0] = 0;
-					} else {
-						const diff = 80 - ovr;
-						// # Make the progRanges are whatever number it takes to get them to 80 based on their ovr
-						progRange[1] = diff;
-						if (flagLower) {
-							progRange[0] = diff;
-						}
-					}
-				}
+				// ! Section: Prog Stats Control
 
 				// # Control which stats get progressed
 				const keys = [
@@ -316,7 +354,6 @@ async function compileProgs() {
 
 					// ? Prog the player stats
 					prog = bbgm.random.randInt(...progRange);
-
 					// # Players 25+ will have 70% chance to progress `spd`, `stre` and `jmp` skills.
 					if (
 						ageFlags.twentyFive &&
