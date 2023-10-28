@@ -1,11 +1,13 @@
 # How To Use
 
-***Preliminary information:***
-
+### Important
 - [Worker Console](WorkerConsole.js) is intended to be used *before* you run progs.
   - You can use WorkerConsole at any time, but you *must* run them before progs each season.
   - Ideally, run [worker console code](WorkerConsole.js) in the Off-season Free Agency
 - **Only players who are 25 y/o and older are affected** - they should be 26 after 'Progs' and this is the target age we want to affect.
+
+### Age Tierlist
+Review the age tierlist along with how low and high a player can go in each tierlist **[here](tiers.md)**
 
 ## Instructions 📓
 
@@ -24,6 +26,8 @@
 You can view the specifics of who progged, god progged (from the prog script), etc by viewing the `News Feed` inside of BBGM. This is where all Prog Script information will be logged.
 
 ## Additional Information
+
+
 
 This Prog Script currently includes features that are intended to assist with balancing Leagues.
 
