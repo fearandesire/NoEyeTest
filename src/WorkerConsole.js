@@ -3,8 +3,8 @@
  * If you forget to run this first and have already simmed, you are able to change the `age` on line 14 to `26`, and then run NoEyeTest again.
  * See README.md for more information
  */
-var players = await bbgm.idb.cache.players.getAll();
-const seasonObj = await bbgm.idb.cache.gameAttributes.get(`season`);
+const players = await bbgm.idb.cache.players.getAll();
+const seasonObj = await bbgm.idb.cache.gameAttributes.get('season');
 const season = seasonObj.value;
 for (const p of players) {
 	const age = Number(season) - Number(p.born.year);
