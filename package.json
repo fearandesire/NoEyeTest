@@ -15,6 +15,7 @@
 		"semantic-release": "^19.0.5"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "1.9.4"
+		"@biomejs/biome": "1.9.4",
+		"lefthook": "^1.10.3"
 	}
 }

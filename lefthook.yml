@@ -1,0 +1,6 @@
+pre-commit:
+  parallel: true
+  commands:
+    linter:
+      glob: "*.{js,ts,jsx,tsx}"
+      run: pnpm biome check {staged_files} && pnpm biome format --write {staged_files} 
