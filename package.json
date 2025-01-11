@@ -4,19 +4,17 @@
 	"description": "BBGM Prog Script",
 	"main": "src/NoEyeTest.js",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"lint": "biome check --write .",
+		"format": "biome format --write .",
+		"ci:lint-format": "pnpm run lint && pnpm run format"
 	},
-	"author": "@fearandesire",
+	"author": "fearandesire",
 	"license": "MIT",
 	"dependencies": {
-		"eslint-plugin-prettier": "^4.2.1",
 		"semantic-release": "^19.0.5"
 	},
 	"devDependencies": {
-		"eslint": "8.34.0",
-		"eslint-config-airbnb-base": "^15.0.0",
-		"eslint-config-prettier": "^8.5.0",
-		"eslint-plugin-import": "^2.26.0",
-		"prettier": "^3.2.5"
+		"@biomejs/biome": "1.9.4"
 	}
 }

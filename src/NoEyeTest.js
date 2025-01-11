@@ -1,19 +1,17 @@
 /**
- * NoEyeTest: BBGM Prog Script | v.3.1.1
+ * NoEyeTest: BBGM Prog Script | v3.2.0
  * This script is used to calculate the 'Prog Range' (PR) for a player, and adjust their progs accordingly.
  * A prog range is how low or high a player can progress in the off-season.
  * The prog range is calculated by taking the player's PER from the previous season
  * Currently, this is designed for players 26+
  * Please see the README on how to use this
- *
- * Credits to TheProgMaestro for the original code this stemmed from, which I have now modified to create my own distirbution of it.
  */
 
 /**
  * Creates a notification into the game's log.
  */
 async function sendProgNotification(data) {
-	let { player, progRange, ageRange, per, godProg, ovr } = data || null;
+	const { player, progRange, ageRange, per, godProg, ovr } = data || null;
 	const SZN = bbgm.g.get('season');
 	const seasonYr = SZN - 1;
 	if (!player) {
@@ -24,8 +22,8 @@ async function sendProgNotification(data) {
 		return;
 	}
 	const notiTitle = godProg ? 'God Progged!<br/>Prog Info:' : 'Prog Info:';
-	const ageRangeFull = ageRange || `N/A`;
-	const perFull = per ? per.toFixed(2) : `N/A`;
+	const ageRangeFull = ageRange || 'N/A';
+	const perFull = per ? per.toFixed(2) : 'N/A';
 	await bbgm.idb.cache.players.put(player);
 	await bbgm.logEvent({
 		type: 'Progs',
@@ -111,11 +109,11 @@ let godProgCount = 0;
 function getAgeRange(age) {
 	if (age >= 25 && age <= 30) {
 		return '25-30';
-	} else if (age >= 31 && age <= 34) {
-		return '31-34';
-	} else {
-		return '35+';
 	}
+	if (age >= 31 && age <= 34) {
+		return '31-34';
+	}
+	return '35+';
 }
 async function compileProgs() {
 	const players = await bbgm.idb.cache.players.getAll(); // Collect all players in the game via the cache.
@@ -132,10 +130,7 @@ async function compileProgs() {
 			let per = 0;
 			let ovr = 0;
 			const playerStats = p.stats.filter(
-				(stat) =>
-					stat.season === seasonYr &&
-					stat.per !== 0 &&
-					!stat.playoffs,
+				(stat) => stat.season === seasonYr && stat.per !== 0 && !stat.playoffs,
 			);
 
 			if (playerStats.length > 0) {
@@ -145,10 +140,7 @@ async function compileProgs() {
 			}
 
 			if (playerStats.length > 1) {
-				const totalPer = playerStats.reduce(
-					(sum, stat) => sum + stat.per,
-					0,
-				);
+				const totalPer = playerStats.reduce((sum, stat) => sum + stat.per, 0);
 				per = totalPer / playerStats.length;
 			} else if (playerStats.length === 1) {
 				per = Math.fround(playerStats[0].per);
@@ -205,8 +197,7 @@ async function compileProgs() {
 				async function progs(data) {
 					const { age, per, ovr } = data;
 					if (ageRange === '25-30' || ageRange === '31-34') {
-						const { min1, min2, max1, max2, hardMax } =
-							minMaxes[ageRange];
+						const { min1, min2, max1, max2, hardMax } = minMaxes[ageRange];
 						progRange = getProgRange(per, {
 							min1,
 							min2,
@@ -245,7 +236,6 @@ async function compileProgs() {
 
 				// ! Section: God Progs
 				if (age < 30) {
-					let godProgChance;
 					// Minimum and maximum overall rating for scaling chance
 					const MIN_RATING = 30;
 					const MAX_RATING = 61;
@@ -260,20 +250,18 @@ async function compileProgs() {
 						scalingFactor = 0.01;
 					} else {
 						scalingFactor =
-							1.0 -
-							(ovr - MIN_RATING) / (MAX_RATING - MIN_RATING);
+							1.0 - (ovr - MIN_RATING) / (MAX_RATING - MIN_RATING);
 					}
 
 					// # Calculate the godProgChance using the scaling factor
-					godProgChance = scalingFactor * MAX_CHANCE;
+					const godProgChance = scalingFactor * MAX_CHANCE;
 
 					if (Math.random() < godProgChance) {
 						const minGodProg = 7;
 						const maxGodProg = 13;
 						const randProg =
-							Math.floor(
-								Math.random() * (maxGodProg - minGodProg),
-							) + minGodProg;
+							Math.floor(Math.random() * (maxGodProg - minGodProg)) +
+							minGodProg;
 						progRange = [randProg, randProg];
 						await notification({
 							player: p,
@@ -307,15 +295,11 @@ async function compileProgs() {
 					'tp',
 				];
 				let prog;
-				let oldAgeKeys = [`spd`, `stre`, `jmp`, `endu`];
-				let midAgeKeys = [`spd`, `stre`, `jmp`];
+				const oldAgeKeys = ['spd', 'stre', 'jmp', 'endu'];
+				const midAgeKeys = ['spd', 'stre', 'jmp'];
 				for await (const key of keys) {
 					// # Restrict 30+ yr old players physical skill progs
-					if (
-						ageFlags.thirty &&
-						oldAgeKeys.includes(key) &&
-						progRange[1] > 0
-					) {
+					if (ageFlags.thirty && oldAgeKeys.includes(key) && progRange[1] > 0) {
 						// # Provide anywhere between a 1 - 5% chance to prog a physical skill
 						const oldProgPhys = Math.random() * 0.05 + 0.01;
 						if (Math.random() < oldProgPhys) {
@@ -331,11 +315,7 @@ async function compileProgs() {
 					// ? Prog the player stats
 					prog = bbgm.random.randInt(...progRange);
 					// # Players 25+ will have 70% chance to progress `spd`, `stre` and `jmp` skills.
-					if (
-						ageFlags.twentyFive &&
-						midAgeKeys.includes(key) &&
-						prog > 0
-					) {
+					if (ageFlags.twentyFive && midAgeKeys.includes(key) && prog > 0) {
 						// ? Decreasing linear function - Reduce the chance of progressing `spd`, `stre` and `jmp` as they age
 						const ageFactor = 0.7 - (age - 25) * 0.1;
 						// ? 30+ will have a 0% chance
@@ -358,7 +338,7 @@ async function compileProgs() {
 }
 const logGodProgs = async () => {
 	await bbgm.logEvent({
-		type: `God Progs`,
+		type: 'God Progs',
 		text: `God Prog Count This Run: ${godProgCount}`,
 		showNotification: true,
 		persistent: false,
