@@ -28,7 +28,7 @@ class Config {
 	static AGE_RANGES = {
 		YOUNG: '25-30',
 		MID: '31-34',
-		OLD: '35+'
+		OLD: '35+',
 	};
 
 	/** @type {Object.<string, number>} Progression system limits and thresholds */
@@ -38,7 +38,7 @@ class Config {
 		MAX_RATING: 61,
 		MAX_GOD_PROG_CHANCE: 0.09,
 		MIN_GOD_PROG: 7,
-		MAX_GOD_PROG: 13
+		MAX_GOD_PROG: 13,
 	};
 
 	/**
@@ -46,9 +46,24 @@ class Config {
 	 *  @type {Object.<string, string[]>} Player skill attributes categorized by type
 	 *  */
 	static SKILL_KEYS = {
-		ALL: ['diq', 'dnk', 'drb', 'endu', 'fg', 'ft', 'ins', 'jmp', 'oiq', 'pss', 'reb', 'spd', 'stre', 'tp'],
+		ALL: [
+			'diq',
+			'dnk',
+			'drb',
+			'endu',
+			'fg',
+			'ft',
+			'ins',
+			'jmp',
+			'oiq',
+			'pss',
+			'reb',
+			'spd',
+			'stre',
+			'tp',
+		],
 		PHYSICAL_OLD: ['spd', 'stre', 'jmp', 'endu'],
-		PHYSICAL_MID: ['spd', 'stre', 'jmp']
+		PHYSICAL_MID: ['spd', 'stre', 'jmp'],
 	};
 
 	/** @type {Object.<string, ProgOptions>} Progression ranges for different age groups */
@@ -67,11 +82,11 @@ class Config {
 			max2: 3,
 			hardMax: 2,
 		},
-		'35+': { 
-			min1: 6, 
-			min2: 9, 
-			hardMax: 0 
-		}
+		'35+': {
+			min1: 6,
+			min2: 9,
+			hardMax: 0,
+		},
 	};
 }
 
@@ -95,14 +110,14 @@ class NotificationService {
 		const { player, progRange, ageRange, per, godProg, ovr } = data || {};
 		const SZN = bbgm.g.get('season');
 		const seasonYr = SZN - 1;
-		
+
 		if (!player || !player.pid) return;
-		
+
 		const { pid, firstName, lastName, tid } = player;
 		const notiTitle = godProg ? 'God Progged!<br/>Prog Info:' : 'Prog Info:';
 		const ageRangeFull = ageRange || 'N/A';
 		const perFull = per ? per.toFixed(2) : 'N/A';
-		
+
 		await bbgm.idb.cache.players.put(player);
 		await bbgm.logEvent({
 			type: 'Progs',
@@ -166,7 +181,9 @@ class Utils {
 	static calculatePER(playerStats) {
 		if (playerStats.length === 0) return 0;
 		const totalPer = playerStats.reduce((sum, stat) => sum + stat.per, 0);
-		return playerStats.length === 1 ? Math.fround(playerStats[0].per) : totalPer / playerStats.length;
+		return playerStats.length === 1
+			? Math.fround(playerStats[0].per)
+			: totalPer / playerStats.length;
 	}
 }
 
@@ -182,8 +199,10 @@ class ProgressionCalculator {
 	 * @returns {Array<number>} Progression range [min, max]
 	 */
 	static getProgRange(per, progOptions) {
-		let min, max;
-		const { min1, min2, max1, max2, hardMin, hardMax, ovr, age } = progOptions || {};
+		let min;
+		let max;
+		const { min1, min2, max1, max2, hardMin, hardMax, ovr, age } =
+			progOptions || {};
 
 		if (per <= 20 && age < 31) {
 			min = Math.ceil(per / 5) - 6;
@@ -196,7 +215,7 @@ class ProgressionCalculator {
 		if (hardMin) min = hardMin;
 		if ((hardMax && max > hardMax) || max > hardMax) max = hardMax;
 
-		return this.adjustForOVRCap(min, max, ovr, age);
+		return ProgressionCalculator.adjustForOVRCap(min, max, ovr, age);
 	}
 
 	/**
@@ -208,26 +227,28 @@ class ProgressionCalculator {
 	 * @returns {Array<number>} Adjusted progression range [min, max]
 	 */
 	static adjustForOVRCap(min, max, ovr, age) {
-		const ovrProgression = max + ovr;
-		const flagLower = min + ovr;
+		let adjustedMin = min;
+		let adjustedMax = max;
+		const ovrProgression = adjustedMax + ovr;
+		const flagLower = adjustedMin + ovr;
 
 		if (ovrProgression >= Config.PROGRESSION_LIMITS.MAX_OVR) {
 			if (ovr >= Config.PROGRESSION_LIMITS.MAX_OVR) {
-				max = 0;
-				if (age > 30 && age < 35) min = -10;
-				if (age >= 35) min = -14;
+				adjustedMax = 0;
+				if (age > 30 && age < 35) adjustedMin = -10;
+				if (age >= 35) adjustedMin = -14;
 				if (age <= 30) {
 					const randomMin = Utils.randomInt(-2, 0);
-					if (randomMin < 0.02) min = -2;
+					if (randomMin < 0.02) adjustedMin = -2;
 				}
-				if (min > max) min = 0;
+				if (adjustedMin > adjustedMax) adjustedMin = 0;
 			} else {
-				max = Config.PROGRESSION_LIMITS.MAX_OVR - ovr;
-				if (flagLower >= Config.PROGRESSION_LIMITS.MAX_OVR) min = 0;
+				adjustedMax = Config.PROGRESSION_LIMITS.MAX_OVR - ovr;
+				if (flagLower >= Config.PROGRESSION_LIMITS.MAX_OVR) adjustedMin = 0;
 			}
 		}
 
-		return [min, max];
+		return [adjustedMin, adjustedMax];
 	}
 }
 
@@ -245,7 +266,8 @@ class GodProgSystem {
 	 * @returns {number} Probability of god prog (0-1)
 	 */
 	static calculateGodProgChance(ovr) {
-		const { MIN_RATING, MAX_RATING, MAX_GOD_PROG_CHANCE } = Config.PROGRESSION_LIMITS;
+		const { MIN_RATING, MAX_RATING, MAX_GOD_PROG_CHANCE } =
+			Config.PROGRESSION_LIMITS;
 		let scalingFactor;
 
 		if (ovr < MIN_RATING) {
@@ -268,13 +290,13 @@ class GodProgSystem {
 	static godProg(age, ovr) {
 		if (age >= 30) return null;
 
-		const godProgChance = this.calculateGodProgChance(ovr);
+		const godProgChance = GodProgSystem.calculateGodProgChance(ovr);
 		if (Math.random() >= godProgChance) return null;
 
 		const { MIN_GOD_PROG, MAX_GOD_PROG } = Config.PROGRESSION_LIMITS;
 		const randProg = Utils.randomInt(MIN_GOD_PROG, MAX_GOD_PROG);
-		this.godProgCount++;
-		
+		GodProgSystem.godProgCount++;
+
 		return [randProg, randProg];
 	}
 }
@@ -302,21 +324,21 @@ class PlayerProgressionSystem {
 		if (player.watch !== 1 || player.draft.year === seasonYr) return;
 
 		const playerStats = player.stats.filter(
-			stat => stat.season === seasonYr && stat.per !== 0 && !stat.playoffs
+			(stat) => stat.season === seasonYr && stat.per !== 0 && !stat.playoffs,
 		);
 
 		const per = Utils.calculatePER(playerStats);
 		if (per === 0) {
 			await this.notificationService.sendProgNotification({
 				player: player.pid,
-				progRange: 'No PER located - Used BBGM Progs'
+				progRange: 'No PER located - Used BBGM Progs',
 			});
 			return;
 		}
 
 		const age = bbgm.g.get('season') - player.born.year;
 		const ageRange = Utils.getAgeRange(age);
-		
+
 		if (player.ratings.length <= 1) return;
 
 		player.ratings.pop();
@@ -324,9 +346,15 @@ class PlayerProgressionSystem {
 		const ratings = player.ratings.at(-1);
 		const ovr = ratings.ovr;
 
-		const progRange = await this.calculateProgression(player, age, per, ovr, ageRange);
+		const progRange = await this.calculateProgression(
+			player,
+			age,
+			per,
+			ovr,
+			ageRange,
+		);
 		await this.applyProgressions(player, ratings, progRange, age);
-		
+
 		await this.finalizePlayer(player);
 	}
 
@@ -341,7 +369,11 @@ class PlayerProgressionSystem {
 	 */
 	async calculateProgression(player, age, per, ovr, ageRange) {
 		const progConfig = Config.PROG_RANGES[ageRange];
-		let progRange = ProgressionCalculator.getProgRange(per, { ...progConfig, ovr, age });
+		let progRange = ProgressionCalculator.getProgRange(per, {
+			...progConfig,
+			ovr,
+			age,
+		});
 
 		const godProgRange = GodProgSystem.godProg(age, ovr);
 		if (godProgRange) {
@@ -352,7 +384,7 @@ class PlayerProgressionSystem {
 				ageRange,
 				per,
 				ovr,
-				godProg: true
+				godProg: true,
 			});
 		} else {
 			await this.notificationService.sendProgNotification({
@@ -360,7 +392,7 @@ class PlayerProgressionSystem {
 				progRange,
 				ageRange,
 				per,
-				ovr
+				ovr,
 			});
 		}
 
@@ -378,14 +410,15 @@ class PlayerProgressionSystem {
 	async applyProgressions(player, ratings, progRange, age) {
 		const ageFlags = {
 			thirty: age >= 30,
-			twentyFive: age >= 25 && age < 30
+			twentyFive: age >= 25 && age < 30,
 		};
 
 		for (const key of Config.SKILL_KEYS.ALL) {
 			if (await this.shouldSkipProgression(key, ageFlags, progRange)) continue;
 
 			const prog = bbgm.random.randInt(...progRange);
-			if (await this.shouldSkipPhysicalProgression(key, ageFlags, prog, age)) continue;
+			if (await this.shouldSkipPhysicalProgression(key, ageFlags, prog, age))
+				continue;
 
 			ratings[key] = bbgm.player.limitRating(ratings[key] + prog);
 		}
@@ -399,7 +432,11 @@ class PlayerProgressionSystem {
 	 * @returns {Promise<boolean>} Whether to skip progression
 	 */
 	async shouldSkipProgression(key, ageFlags, progRange) {
-		if (!ageFlags.thirty || !Config.SKILL_KEYS.PHYSICAL_OLD.includes(key) || progRange[1] <= 0) {
+		if (
+			!ageFlags.thirty ||
+			!Config.SKILL_KEYS.PHYSICAL_OLD.includes(key) ||
+			progRange[1] <= 0
+		) {
 			return false;
 		}
 
@@ -419,7 +456,11 @@ class PlayerProgressionSystem {
 	 * @returns {Promise<boolean>} Whether to skip physical progression
 	 */
 	async shouldSkipPhysicalProgression(key, ageFlags, prog, age) {
-		if (!ageFlags.twentyFive || !Config.SKILL_KEYS.PHYSICAL_MID.includes(key) || prog <= 0) {
+		if (
+			!ageFlags.twentyFive ||
+			!Config.SKILL_KEYS.PHYSICAL_MID.includes(key) ||
+			prog <= 0
+		) {
 			return false;
 		}
 
