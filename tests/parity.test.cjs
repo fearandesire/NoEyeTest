@@ -128,8 +128,15 @@ test('Published averages nonzero prior-season trade PER and ignores playoff/stal
 		[player(1, { stats: [{ season: 2019, per: 15 }] })],
 		options,
 	);
-	assert.deepEqual(traded.writes[0].ratings, average.writes[0].ratings);
+	// Published notifications write once before progression. Compare the final
+	// player, otherwise the untouched baseline passes for any expected PER.
+	assert.deepEqual(traded.players[0].ratings, average.players[0].ratings);
 	assert.equal(traded.drawCount, average.drawCount);
+	const lastStint = await runScript(
+		[player(1, { stats: [{ season: 2019, per: 10 }] })],
+		options,
+	);
+	assert.notDeepEqual(traded.players[0].ratings, lastStint.players[0].ratings);
 	const stale = player(2, { stats: [{ season: 2018, per: 15 }] });
 	assert.deepEqual((await runScript([stale], options)).players, [stale]);
 });
