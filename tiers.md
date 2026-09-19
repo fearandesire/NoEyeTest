@@ -1,48 +1,28 @@
-# Prog Script Age Tierlist
-This tierlist covers the different age brackets the prog script affects as well as the specific ceilings and equations for each player.
+# How 4.3.0 progresses players
 
-**DEXTER** will show you the current `Prog Range` for a player if you use the `/p` or `/stats` command depending on your UI settings.
+**4.3.0 is an opt-in release** of progbox **`v4.3`**. Progbox retains NET **3.2.x** ↔ **`v3.2.1`** as its Published comparison baseline.
 
-## **KEY:**
-- **Hard Max** refers to the *highest* value a player will progress
-- **Hard Min** enforces the *lowest* value a player will **regress**.
-- **Low** & **High** refer to the [Lowest, Highest] a player can progress for their 'Prog Range'.
-- A `Prog Range` is the 'range' a player has for progs this season. The first number is the lowest, and the secon is the highest
-- All ranges are rounded up
+The candidate drops the old age-band prog-range tables. Dexter `/p` still shows a "prog range" from the 3.x formulas — that display is stale until Dexter is updated. Trust the News Feed Δ line after you run the candidate.
 
-### 25-30
-**Hard Max: 4**
+## What drives a prog
 
-Math:
-- **If PER <= 20 & age < 31:**
-  - Low:  (per / 5) - 6
-  - High:  (per / 4) - 1
-- **Otherwise:**
-  - Low: (per / 5) - 7
-  - High: (per / 4) - 2
+1. **Production** — composite of BPM (70%) and PER (30%), measured as a reliability-weighted z-score against the age-25+ / PER≠0 league pool (active/free-agent players with valid birth data and ratings, using the last prior-season regular-season stint; not only watched players). Young high-production players develop faster; low-production players stagnate. Older high-production players resist decline better.
+2. **Age** — youth improvement below 28, decline above 32, plus a per-attribute age shape (speed/jump fall faster; shooting touch and pass hold longer). IQ ratings ignore the global age term and only take their local nudge.
+3. **Defense** — steal%, block%, and DBPM feed dIQ, strength, and jump. Lockdown defenders progress even when PER looks ordinary.
+4. **Noise** — small per-attribute jitter plus one common shock for the whole player. Low-minute guys get noisier swings.
 
-### 31-34
-**Hard Max: 2**
+## Soft ceiling
 
-Math:
-- Low: (per / 6) - 7
-- High: (per / 4) - 3
+Positive gains taper between OVR ~78 and ~82. There is no hard "stop at 80" clamp. Attributes still move independently near the top so one capped skill doesn't flatten the rest.
 
-### 35+
-**Hard Max: 0**
+## God progs
 
-Math:
-- Low: (per / 6) - 9
-- High: 0
+Age under 30, OVR-scaled chance (max 9%), flat +7 to +13 inclusive on every rating except height. Bypasses the normal formula for that player that season. Published 3.2 uses +7 to +12; its upper endpoint is exclusive.
 
-## **80+ ovr**
-**Hard Max:** 0
+## Who is touched
 
-### <= 30
-**Hard Min:** Between 0 and -2 (Random)
+Worker Console flags age 25+ before preseason, normally entering NET at 26+ after the season increment. NET can also progress a manually watched entering-age-25 player. It does not silently reassign watch flags.
 
-### 31-34
-**Hard Min:** -10
+Preparation requires active/free-agent status, integer team ID and positive integer birth year, nonempty ratings, entering age 25+, and finite nonzero PER from the last prior-season regular row. Progression additionally requires `watch === 1`, positive PER, not drafted in the prior season, and at least two ratings rows. Negative PER affects pool moments but never triggers progression. All skip guards run before removing a ratings row.
 
-### 35+
-**Hard Min:** -14
+NET restores the prior ratings base after BBGM adds the preseason row. Attributes clamp to 0–100 and floor before the pinned BBGM OVR calculation. Stale-only and playoff-only histories are excluded. Candidate uses the last regular-season trade stint; Published averages nonzero prior-season regular PER rows. See the README for source pins and the distinction between local tests and live acceptance.
