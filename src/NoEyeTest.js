@@ -1,14 +1,15 @@
 /**
- * NoEyeTest: BBGM Prog Script | v4.3.0
+ * NoEyeTest: BBGM Prog Script | v4.3.0 (unpublished candidate)
  *
  * Port of progbox v43_progression.hpp. Two-pass: pool moments from every
- * player with a qualifying season row, then progress watched players age 25+.
+ * player age ≥ 25 with PER ≠ 0 (matches C++ load_players), then progress
+ * watched players age 25+. Under-25 watched players keep BBGM progs.
  *
  * Production composite: 70% BPM + 30% PER. Soft ceiling (not hard OVR 80).
  * Defenders get credit via STL%/BLK%/DBPM. RNG is Math.random() (no seed;
  * BBGM has none).
  *
- * See README.md for how to run.
+ * Published/live remains 3.2.x ↔ progbox v321. See README.md for how to run.
  */
 
 // Attr index order = C++ ALL_ATTRS. BBGM keys: 2Pt→fg, 3Pt→tp, End→endu, Str→stre.
@@ -297,7 +298,7 @@ function emptyPool() {
 }
 
 /**
- * Pass 1: reliability-weighted moments over all players with stats.
+ * Pass 1: reliability-weighted moments over age ≥ 25 / PER ≠ 0 season rows.
  */
 function preparePool(statList) {
 	const pool = emptyPool();
@@ -588,9 +589,13 @@ async function compileProgs() {
 	const SZN = bbgm.g.get('season');
 	const seasonYr = SZN - 1;
 
-	// Pass 1: pool from every player with a qualifying season row
+	// Pass 1: league moments — age ≥ 25 + PER ≠ 0 (C++ load_players parity)
 	const poolStats = [];
 	for (const p of players) {
+		const age = SZN - p.born.year;
+		if (age < 25) {
+			continue;
+		}
 		const s = statsFor(p, seasonYr);
 		if (s) {
 			poolStats.push(s);
@@ -598,9 +603,14 @@ async function compileProgs() {
 	}
 	const pool = preparePool(poolStats);
 
-	// Pass 2: progress watched 25+
+	// Pass 2: progress watched 25+ only (under-25 keep BBGM progs untouched)
 	for (const p of players) {
 		if (p.watch !== 1 || p.draft.year === seasonYr) {
+			continue;
+		}
+
+		const age = SZN - p.born.year;
+		if (age < 25) {
 			continue;
 		}
 
@@ -610,7 +620,7 @@ async function compileProgs() {
 				player: p,
 				per: 0,
 				ovr: p.ratings?.at?.(-1)?.ovr,
-				age: SZN - p.born.year,
+				age,
 				delta: null,
 				godProg: false,
 			});
