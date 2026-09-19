@@ -1,0 +1,20 @@
+{
+	"revision": "0ae7a104d541ad0a4806de083819b19735cbf301",
+	"files": [
+		{
+			"file": "limitRating.ts",
+			"source": "https://raw.githubusercontent.com/zengm-games/zengm/0ae7a104d541ad0a4806de083819b19735cbf301/src/worker/core/player/limitRating.ts",
+			"sha256": "f0b57d7409ea74f9f06b5200826d6d981e84d8b85bc76666278e5e34f84e891b"
+		},
+		{
+			"file": "ovr.basketball.ts",
+			"source": "https://raw.githubusercontent.com/zengm-games/zengm/0ae7a104d541ad0a4806de083819b19735cbf301/src/worker/core/player/ovr.basketball.ts",
+			"sha256": "6d2faa34bbebc7844b252017c80b468784731348884f7e057fa784bd062c854f"
+		},
+		{
+			"file": "LICENSE.md",
+			"source": "https://raw.githubusercontent.com/zengm-games/zengm/0ae7a104d541ad0a4806de083819b19735cbf301/LICENSE.md",
+			"sha256": "4b062aff490de1273782c6ab56839be01913690f494f0c95ac02bb07cb1f3603"
+		}
+	]
+}

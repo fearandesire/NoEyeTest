@@ -1,13 +1,13 @@
 {
 	"name": "noeyetest",
 	"version": "4.3.0",
-	"description": "BBGM Prog Script — 4.3.0 unpublished candidate (live = 3.2.x / progbox v3.2.1; port of progbox v4.3)",
+	"description": "BBGM Prog Script \u2014 4.3.0 unpublished candidate (live = 3.2.x / progbox v3.2.1; port of progbox v4.3)",
 	"main": "src/NoEyeTest.js",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1",
-		"lint": "biome check --write .",
+		"test": "node --test tests/*.test.cjs",
+		"lint": "biome check .",
 		"format": "biome format --write .",
-		"ci:lint-format": "pnpm run lint && pnpm run format"
+		"ci:lint-format": "pnpm run lint"
 	},
 	"author": "fearandesire",
 	"license": "MIT",
