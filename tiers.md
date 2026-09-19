@@ -6,7 +6,7 @@ The candidate drops the old age-band prog-range tables. Dexter `/p` still shows 
 
 ## What drives a prog
 
-1. **Production** — composite of BPM (70%) and PER (30%), measured as a reliability-weighted z-score against the age-25+ / PER≠0 league pool (C++ `load_players` parity; not only watched players). Young high-production players develop faster; low-production players stagnate. Older high-production players resist decline better.
+1. **Production** — composite of BPM (70%) and PER (30%), measured as a reliability-weighted z-score against the age-25+ / PER≠0 league pool (active/free-agent players with valid birth data and ratings, using the last prior-season regular-season stint; not only watched players). Young high-production players develop faster; low-production players stagnate. Older high-production players resist decline better.
 2. **Age** — youth improvement below 28, decline above 32, plus a per-attribute age shape (speed/jump fall faster; shooting touch and pass hold longer). IQ ratings ignore the global age term and only take their local nudge.
 3. **Defense** — steal%, block%, and DBPM feed dIQ, strength, and jump. Lockdown defenders progress even when PER looks ordinary.
 4. **Noise** — small per-attribute jitter plus one common shock for the whole player. Low-minute guys get noisier swings.
@@ -17,8 +17,12 @@ Positive gains taper between OVR ~78 and ~82. There is no hard "stop at 80" clam
 
 ## God progs
 
-Same idea as 3.2: age under 30, OVR-scaled chance (max 9%), flat +7 to +13 on every rating except height. Bypasses the normal formula for that player that season.
+Age under 30, OVR-scaled chance (max 9%), flat +7 to +13 inclusive on every rating except height. Bypasses the normal formula for that player that season. Published 3.2 uses +7 to +12; its upper endpoint is exclusive.
 
 ## Who is touched
 
-Worker Console flags age 25+. NET only rewrites ratings for `watch === 1` players who are 25+ with a real non-playoff PER that season. Younger players and zero-PER rows keep BBGM's own progs.
+Worker Console flags age 25+ before preseason, normally entering NET at 26+ after the season increment. NET can also progress a manually watched entering-age-25 player. It does not silently reassign watch flags.
+
+Preparation requires active/free-agent status, integer team ID and positive integer birth year, nonempty ratings, entering age 25+, and finite nonzero PER from the last prior-season regular row. Progression additionally requires `watch === 1`, positive PER, not drafted in the prior season, and at least two ratings rows. Negative PER affects pool moments but never triggers progression. All skip guards run before removing a ratings row.
+
+NET restores the prior ratings base after BBGM adds the preseason row. Attributes clamp to 0–100 and floor before the pinned BBGM OVR calculation. Stale-only and playoff-only histories are excluded. Candidate uses the last regular-season trade stint; Published averages nonzero prior-season regular PER rows. See the README for source pins and the distinction between local tests and live acceptance.

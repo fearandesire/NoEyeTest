@@ -3,7 +3,7 @@
  *
  * Port of progbox v4.3 (engine source v43_progression.hpp; compact CLI
  * aliases like v43/v321 exist in progbox only). Two-pass: pool moments from
- * every player age ≥ 25 with PER ≠ 0 (matches C++ load_players), then
+ * active/free-agent player age ≥ 25 with valid ratings and PER ≠ 0, then
  * progress watched players age 25+. Under-25 watched players keep BBGM progs.
  *
  * Production composite: 70% BPM + 30% PER. Soft ceiling (not hard OVR 80).
@@ -176,7 +176,7 @@ function randIntInclusive(min, max) {
 
 /**
  * Last non-playoff season row for seasonYr → PlayerStats shape.
- * C++ main.cpp: is_playoffs ? [-2] : last; here scoped to seasonYr.
+ * Stale rows and playoff-only histories never supply a regular season.
  */
 function statsFor(p, seasonYr) {
 	const rows = p.stats || [];
@@ -189,24 +189,10 @@ function statsFor(p, seasonYr) {
 		}
 	}
 	if (!row) {
-		// C++ playoffs fallback within seasonYr
-		for (let i = rows.length - 1; i >= 0; i--) {
-			const st = rows[i];
-			if (st.season === seasonYr) {
-				if (st.playoffs && i > 0 && rows[i - 1].season === seasonYr) {
-					row = rows[i - 1];
-				} else if (!st.playoffs) {
-					row = st;
-				}
-				break;
-			}
-		}
-	}
-	if (!row) {
 		return null;
 	}
 	const per = Number(row.per) || 0;
-	if (per <= 0) {
+	if (!Number.isFinite(per) || per === 0) {
 		return null;
 	}
 	const gp = Number(row.gp) || 0;
@@ -590,13 +576,19 @@ async function compileProgs() {
 	const SZN = bbgm.g.get('season');
 	const seasonYr = SZN - 1;
 
-	// Pass 1: league moments — age ≥ 25 + PER ≠ 0 (C++ load_players parity)
+	// Preparation and mutation share structural eligibility. Negative PER is pool-only.
+	const eligible = players.filter(
+		(p) =>
+			Number.isInteger(p.tid) &&
+			p.tid >= -1 &&
+			Number.isInteger(p.born?.year) &&
+			p.born.year > 0 &&
+			SZN - p.born.year >= 25 &&
+			Array.isArray(p.ratings) &&
+			p.ratings.length > 0,
+	);
 	const poolStats = [];
-	for (const p of players) {
-		const age = SZN - p.born.year;
-		if (age < 25) {
-			continue;
-		}
+	for (const p of eligible) {
 		const s = statsFor(p, seasonYr);
 		if (s) {
 			poolStats.push(s);
@@ -605,8 +597,8 @@ async function compileProgs() {
 	const pool = preparePool(poolStats);
 
 	// Pass 2: progress watched 25+ only (under-25 keep BBGM progs untouched)
-	for (const p of players) {
-		if (p.watch !== 1 || p.draft.year === seasonYr) {
+	for (const p of eligible) {
+		if (p.watch !== 1 || p.draft?.year === seasonYr) {
 			continue;
 		}
 
@@ -616,10 +608,10 @@ async function compileProgs() {
 		}
 
 		const s = statsFor(p, seasonYr);
-		if (!s) {
+		if (!s || s.per <= 0) {
 			await sendProgNotification({
 				player: p,
-				per: 0,
+				per: s?.per ?? 0,
 				ovr: p.ratings?.at?.(-1)?.ovr,
 				age,
 				delta: null,
