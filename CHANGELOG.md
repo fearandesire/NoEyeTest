@@ -1,15 +1,18 @@
-## [4.3.0] - 2026-09-18
+## [4.3.0] - unpublished candidate
 
-### What changed
+> **Not published.** Live leagues stay on **3.2.x** ↔ progbox **`v321`**. This entry documents the `v43` port under review; do not cut a release tag from it yet.
+
+### What changed (candidate)
 
 - Production drivers are BPM + PER (70/30), not PER alone
 - Age curve uses knees at 28 / 32 and a per-attribute shape (athleticism falls faster; touch holds)
 - Soft ceiling replaces the hard OVR 80 cap
 - Defenders get credit via STL% / BLK% / DBPM into dIQ, strength, and jump
-- Noise scales with minutes; pool z-scores use the whole league, not only watched players
+- Noise scales with minutes; pool z-scores use age-25+ players with PER ≠ 0 (C++ `load_players` parity), not only watched players
+- Under-25 watched players keep BBGM progs (ratings row is not wiped before the age gate)
 - News Feed shows per-attribute Δ instead of a prog-range pair
 
-### Breaking
+### Breaking (if/when published)
 
 - Old prog-range tables and `tiers.md` band equations no longer apply
 - Dexter `/p` prog-range display is stale until Dexter is updated
@@ -19,7 +22,7 @@
 
 Unchanged: Worker Console → BBGM progs → NET in Preseason.
 
-## [3.2.0] - 2024-05-13
+## [3.2.0] - 2024-05-13 (published / live ↔ progbox v321)
 
 ### Added
 

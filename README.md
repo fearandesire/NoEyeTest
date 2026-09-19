@@ -1,6 +1,10 @@
 # Overview of NoEyeTest
 
-**NoEyeTest** (NET) is a Browser Basketball GM progression script. Version 4.3.0 ports the progbox `v43` model: production is mostly BPM with a PER lean, age has knees at 28 and 32 with per-attribute shape, defenders get credit through steal%/block%/DBPM, and a soft ceiling tapers gains near elite OVR instead of a hard 80 cap.
+**NoEyeTest** (NET) is a Browser Basketball GM progression script.
+
+**Published / live:** **3.2.x** (aligned with progbox **`v321`**). That is what leagues should run today.
+
+**4.3.0** on this branch is an **unpublished candidate** — a port of progbox `v43` for review. Do not treat it as released.
 
 ## Preliminary Information
 
@@ -26,15 +30,16 @@ And a player who isn't
 **_News Feed Post-NET:_**
 ![Prog Range Information](https://i.imgur.com/TCjuz3E.png)
 
-### How 4.3 decides progs
+### How the 4.3.0 candidate decides progs
 
-See [tiers.md](tiers.md) for the short story: production drivers, age curve, soft ceiling, god progs. There is no fixed `[min, max]` prog-range table anymore.
+See [tiers.md](tiers.md) for the short story: production drivers, age curve, soft ceiling, god progs. There is no fixed `[min, max]` prog-range table in 4.3.
 
-## Additional Information
+## Additional Information (4.3.0 candidate)
 
 - Under 30: rare god prog (OVR-scaled, max ~9%, flat +7 to +13 on every rating except height)
 - Soft ceiling: positive gains taper from OVR ~78 toward ~82; negative movement is not tapered the same way
-- Pool pass uses every player with a real season row so z-scores are league-relative, not just your flagged roster
+- Pool pass uses every age-25+ player with a real season row (PER ≠ 0) so z-scores match C++ `load_players`, not just your flagged roster
+- Under-25 watched players are left alone — BBGM's own progs stand
 - RNG is `Math.random()` — BBGM has no seed, so re-runs differ
 - News Feed still logs each watched player after NET runs
 
@@ -44,4 +49,4 @@ Default BBGM from ~26 onward leans hard into random regression. One off-season c
 
 #### Credits
 
-The idea and certain elements derive from TheProgMaestro. 4.3 math is the progbox `v43` port (@akshayexists upstream).
+The idea and certain elements derive from TheProgMaestro. Live 3.2.x tracks progbox `v321`. The 4.3.0 candidate ports progbox `v43` (@akshayexists upstream).
