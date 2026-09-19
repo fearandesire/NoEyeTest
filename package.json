@@ -1,7 +1,7 @@
 {
 	"name": "noeyetest",
 	"version": "4.3.0",
-	"description": "BBGM Prog Script — 4.3.0 unpublished candidate (live = 3.2.x / v321)",
+	"description": "BBGM Prog Script — 4.3.0 unpublished candidate (live = 3.2.x / progbox v3.2.1; port of progbox v4.3)",
 	"main": "src/NoEyeTest.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",

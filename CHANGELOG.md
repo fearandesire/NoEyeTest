@@ -1,6 +1,6 @@
 ## [4.3.0] - unpublished candidate
 
-> **Not published.** Live leagues stay on **3.2.x** ↔ progbox **`v321`**. This entry documents the `v43` port under review; do not cut a release tag from it yet.
+> **Not published.** Live leagues stay on **3.2.x** ↔ progbox **`v3.2.1`**. This entry documents the progbox **`v4.3`** port under review; do not cut a release tag from it yet.
 
 ### What changed (candidate)
 
@@ -22,7 +22,7 @@
 
 Unchanged: Worker Console → BBGM progs → NET in Preseason.
 
-## [3.2.0] - 2024-05-13 (published / live ↔ progbox v321)
+## [3.2.0] - 2024-05-13 (published / live ↔ progbox v3.2.1)
 
 ### Added
 

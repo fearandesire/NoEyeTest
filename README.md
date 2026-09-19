@@ -2,9 +2,9 @@
 
 **NoEyeTest** (NET) is a Browser Basketball GM progression script.
 
-**Published / live:** **3.2.x** (aligned with progbox **`v321`**). That is what leagues should run today.
+**Published / live:** **3.2.x** (aligned with progbox **`v3.2.1`**). That is what leagues should run today.
 
-**4.3.0** on this branch is an **unpublished candidate** — a port of progbox `v43` for review. Do not treat it as released.
+**4.3.0** on this branch is an **unpublished candidate** — a port of progbox **`v4.3`** for review. Do not treat it as released.
 
 ## Preliminary Information
 
@@ -49,4 +49,4 @@ Default BBGM from ~26 onward leans hard into random regression. One off-season c
 
 #### Credits
 
-The idea and certain elements derive from TheProgMaestro. Live 3.2.x tracks progbox `v321`. The 4.3.0 candidate ports progbox `v43` (@akshayexists upstream).
+The idea and certain elements derive from TheProgMaestro. Live 3.2.x tracks progbox **`v3.2.1`**. The 4.3.0 candidate ports progbox **`v4.3`** (@akshayexists upstream).

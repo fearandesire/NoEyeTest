@@ -1,15 +1,16 @@
 /**
  * NoEyeTest: BBGM Prog Script | v4.3.0 (unpublished candidate)
  *
- * Port of progbox v43_progression.hpp. Two-pass: pool moments from every
- * player age ≥ 25 with PER ≠ 0 (matches C++ load_players), then progress
- * watched players age 25+. Under-25 watched players keep BBGM progs.
+ * Port of progbox v4.3 (engine source v43_progression.hpp; compact CLI
+ * aliases like v43/v321 exist in progbox only). Two-pass: pool moments from
+ * every player age ≥ 25 with PER ≠ 0 (matches C++ load_players), then
+ * progress watched players age 25+. Under-25 watched players keep BBGM progs.
  *
  * Production composite: 70% BPM + 30% PER. Soft ceiling (not hard OVR 80).
  * Defenders get credit via STL%/BLK%/DBPM. RNG is Math.random() (no seed;
  * BBGM has none).
  *
- * Published/live remains 3.2.x ↔ progbox v321. See README.md for how to run.
+ * Published/live remains 3.2.x ↔ progbox v3.2.1. See README.md for how to run.
  */
 
 // Attr index order = C++ ALL_ATTRS. BBGM keys: 2Pt→fg, 3Pt→tp, End→endu, Str→stre.
@@ -49,7 +50,7 @@ const ATTR = {
 	Hgt: 14,
 };
 
-// v43: Config — verbatim from V43Progression::Config
+// v4.3: Config — verbatim from V43Progression::Config (progbox compact alias)
 const CONFIG = {
 	youngKnee: 28.0,
 	youthRate: 0.6,
@@ -65,7 +66,7 @@ const CONFIG = {
 	prodWPer: 0.3,
 	prodZCap: 3.5,
 	agePivot: 27.0,
-	// v43: ageShapeSlope[15] — index matches ATTR / ALL_ATTRS
+	// v4.3: ageShapeSlope[15] — index matches ATTR / ALL_ATTRS
 	ageShapeSlope: (() => {
 		const s = new Array(15).fill(0);
 		s[ATTR.Hgt] = 0.0;
@@ -99,7 +100,7 @@ const CONFIG = {
 	effAttMin: 20.0,
 	minutesFloor: 8.0,
 	globalScale: 1.0,
-	// v43: god* = v321 values
+	// v4.3: god* = v3.2.1 values (progbox compact alias v321)
 	godYoungMax: 30,
 	godMinRating: 30,
 	godMaxRating: 61,
@@ -243,7 +244,7 @@ function statsFor(p, seasonYr) {
 	};
 }
 
-// v43: Moments — reliability-weighted running mean/sd
+// v4.3: Moments — reliability-weighted running mean/sd
 class Moments {
 	constructor() {
 		this.wsum = 0;
@@ -526,7 +527,7 @@ function progressPlayer(p, s, pool, ratings) {
 
 	const delta = {};
 
-	// v43: god prog first (same chance curve)
+	// v4.3: god prog first (same chance curve)
 	if (age < CONFIG.godYoungMax) {
 		const chance = godChance(ovr);
 		if (Math.random() < chance) {
