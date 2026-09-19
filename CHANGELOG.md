@@ -1,8 +1,8 @@
-## [4.3.0] - unpublished candidate
+## [4.3.0] - 2026-09-19
 
-> **Not published.** Live leagues stay on **3.2.x** ↔ progbox **`v3.2.1`**. This entry documents the progbox **`v4.3`** port under review; do not cut a release tag from it yet.
+> Opt-in release of progbox **`v4.3`**. Progbox keeps **`v3.2.1`** as its Published comparison baseline; league adoption remains explicit.
 
-### What changed (candidate)
+### What changed
 
 - Production drivers are BPM + PER (70/30), not PER alone
 - Age curve uses knees at 28 / 32 and a per-attribute shape (athleticism falls faster; touch holds)
@@ -14,8 +14,9 @@
 - Added full-script Node tests and read-only CI, pinned BBGM floor/OVR/random helpers, and 137 controlled-draw cases shared with the C++ tests
 - Preserved BBGM attribute flooring, inclusive Candidate god bonuses of 7–13, and the existing WorkerConsole age-25-before-preseason roster (normally entering NET at 26+)
 - News Feed shows per-attribute Δ instead of a prog-range pair
+- Verified a real preseason transition and persistent ratings on BBGM v2026.09.16.0733; see the release verification report
 
-### Breaking (if/when published)
+### Compatibility
 
 - Old prog-range tables and `tiers.md` band equations no longer apply
 - Dexter `/p` prog-range display is stale until Dexter is updated

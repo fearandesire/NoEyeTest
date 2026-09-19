@@ -2,7 +2,7 @@
   "references": {
     "publishedCommit": "972f9d3c08476bd91276ea7327b0972dfba3a382",
     "publishedSha256": "9740457fbd83e76a0db7f0641bf3bd2e90a7d7c09c0b6fe612231755e5159b09",
-    "candidateSha256": "e6d932c8ea964b0810db4b2370bab950e523ede7c25e0726f44a7fa9d5043089",
+    "candidateSha256": "c5959e659cce376a4945f437aa3da5b58aff30bf224d33d8bf146a9c5662f8b8",
     "bbgmCommit": "0ae7a104d541ad0a4806de083819b19735cbf301"
   },
   "cases": [

@@ -1,7 +1,7 @@
 {
 	"name": "noeyetest",
 	"version": "4.3.0",
-	"description": "BBGM Prog Script \u2014 4.3.0 unpublished candidate (live = 3.2.x / progbox v3.2.1; port of progbox v4.3)",
+	"description": "BBGM progression script \u2014 NET 4.3.0 opt-in release; progbox Published comparison remains v3.2.1",
 	"main": "src/NoEyeTest.js",
 	"scripts": {
 		"test": "node --test tests/*.test.cjs",

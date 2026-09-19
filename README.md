@@ -2,9 +2,9 @@
 
 **NoEyeTest** (NET) is a Browser Basketball GM progression script.
 
-**Published / live:** **3.2.x** (aligned with progbox **`v3.2.1`**). That is what leagues should run today.
+**4.3.0** is an opt-in release of the progbox **`v4.3`** model. League owners choose when to adopt it.
 
-**4.3.0** on this branch is an **unpublished candidate** — a port of progbox **`v4.3`** for review. Do not treat it as released.
+Progbox keeps **NET 3.2 / `v3.2.1`** as its Published comparison baseline; **`v4.3`** remains the Candidate catalog entry. Releasing NET does not change that comparison pointer.
 
 ## Preliminary Information
 
@@ -30,11 +30,11 @@ And a player who isn't
 **_News Feed Post-NET:_**
 ![Prog Range Information](https://i.imgur.com/TCjuz3E.png)
 
-### How the 4.3.0 candidate decides progs
+### How 4.3.0 decides progs
 
 See [tiers.md](tiers.md) for the short story: production drivers, age curve, soft ceiling, god progs. There is no fixed `[min, max]` prog-range table in 4.3.
 
-## Additional Information (4.3.0 candidate)
+## Additional Information (4.3.0)
 
 - Under 30: rare god prog (OVR-scaled, max ~9%, flat +7 to +13 on every rating except height)
 - Soft ceiling: positive gains taper from OVR ~78 toward ~82; negative movement is not tapered the same way
@@ -55,7 +55,7 @@ pnpm test
 pnpm exec biome check .
 ```
 
-Tests execute the complete browser script in an async Node VM with controlled randomness and player storage. They verify pool membership/moments, stats selection, unchanged skipped histories, the preseason age boundary, and integer ratings/OVR. The same 137 controlled-draw cases in [the shared fixture](tests/fixtures/net_parity_cases.json) also run against the real C++ progression headers in progbox; they cover normal/god branches, bonus endpoints, soft ceilings, clamps, fractional ratings, weighted pools and attempt thresholds for both Candidate and pinned Published scripts. Exact BBGM rating and integer-random helpers are pinned to revision `0ae7a104d541ad0a4806de083819b19735cbf301`; [the source manifest](tests/fixtures/bbgm/sources.json) records URLs and hashes. Vendored helpers retain their [upstream license](tests/fixtures/bbgm/LICENSE.md) and are used only by tests. Storage, `addRatingsRow`, `develop(0)` and values updates are test doubles: these checks do not establish a deployed BBGM revision or live lifecycle acceptance. Live acceptance still requires a disposable league, exact game version and before/after exports.
+Tests execute the complete browser script in an async Node VM with controlled randomness and player storage. They verify pool membership/moments, stats selection, unchanged skipped histories, the preseason age boundary, and integer ratings/OVR. The same 137 controlled-draw cases in [the shared fixture](tests/fixtures/net_parity_cases.json) also run against the real C++ progression headers in progbox; they cover normal/god branches, bonus endpoints, soft ceilings, clamps, fractional ratings, weighted pools and attempt thresholds for both Candidate and pinned Published scripts. Exact BBGM rating and integer-random helpers are pinned to revision `0ae7a104d541ad0a4806de083819b19735cbf301`; [the source manifest](tests/fixtures/bbgm/sources.json) records URLs and hashes. Vendored helpers retain their [upstream license](tests/fixtures/bbgm/LICENSE.md) and are used only by tests. Storage, `addRatingsRow`, `develop(0)` and values updates are test doubles: these checks do not establish a deployed BBGM revision or live lifecycle acceptance. A separate disposable-league check passed on BBGM **v2026.09.16.0733**, including a real preseason transition, skipped histories, persistence after reload, and full before/after exports. See [release verification](docs/release-verification-4.3.0.md) for scope and limitations.
 
 ## Why this exists
 
@@ -63,4 +63,4 @@ Default BBGM from ~26 onward leans hard into random regression. One off-season c
 
 #### Credits
 
-The idea and certain elements derive from TheProgMaestro. Live 3.2.x tracks progbox **`v3.2.1`**. The 4.3.0 candidate ports progbox **`v4.3`** (@akshayexists upstream).
+The idea and certain elements derive from TheProgMaestro. NET 3.2.x tracks progbox **`v3.2.1`**. The 4.3.0 release ports progbox **`v4.3`** (@akshayexists upstream).

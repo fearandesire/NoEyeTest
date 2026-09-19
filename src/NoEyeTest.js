@@ -1,5 +1,5 @@
 /**
- * NoEyeTest: BBGM Prog Script | v4.3.0 (unpublished candidate)
+ * NoEyeTest: BBGM Prog Script | v4.3.0 (opt-in release)
  *
  * Port of progbox v4.3 (engine source v43_progression.hpp; compact CLI
  * aliases like v43/v321 exist in progbox only). Two-pass: pool moments from
@@ -10,7 +10,7 @@
  * Defenders get credit via STL%/BLK%/DBPM. RNG is Math.random() (no seed;
  * BBGM has none).
  *
- * Published/live remains 3.2.x ↔ progbox v3.2.1. See README.md for how to run.
+ * Progbox Published comparison remains 3.2.x ↔ v3.2.1. See README.md to opt in.
  */
 
 // Attr index order = C++ ALL_ATTRS. BBGM keys: 2Pt→fg, 3Pt→tp, End→endu, Str→stre.

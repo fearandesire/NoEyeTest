@@ -1,6 +1,6 @@
-# How the 4.3.0 candidate progresses players
+# How 4.3.0 progresses players
 
-**4.3.0 is an unpublished candidate.** Published/live NET remains **3.2.x** ↔ progbox **`v3.2.1`**. The candidate ports progbox **`v4.3`**.
+**4.3.0 is an opt-in release** of progbox **`v4.3`**. Progbox retains NET **3.2.x** ↔ **`v3.2.1`** as its Published comparison baseline.
 
 The candidate drops the old age-band prog-range tables. Dexter `/p` still shows a "prog range" from the 3.x formulas — that display is stale until Dexter is updated. Trust the News Feed Δ line after you run the candidate.
 
