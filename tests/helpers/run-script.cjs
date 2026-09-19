@@ -25,6 +25,19 @@ function helper(file, name) {
 }
 const limitRating = helper('limitRating.ts', 'limitRating');
 const ovr = helper('ovr.basketball.ts', 'ovr');
+function randomHelper(math) {
+	const source = fs.readFileSync(path.join(helperRoot, 'random.ts'), 'utf8');
+	const functions = ['uniformSeed', 'randInt']
+		.map((name) => {
+			const match = source.match(
+				new RegExp(`export const ${name} = [\\s\\S]*?\\n};`),
+			);
+			assert.ok(match, `missing pinned ${name} helper`);
+			return match[0].replace('export ', '').replace(/\??: number/g, '');
+		})
+		.join('\n');
+	return vm.runInNewContext(`${functions}\nrandInt;`, { Math: math });
+}
 const keys = [
 	'diq',
 	'dnk',
@@ -84,6 +97,7 @@ async function runScript(
 	};
 	const bbgm = {
 		g: { get: (key) => ({ season, phase: 0 })[key] },
+		random: { randInt: randomHelper(math) },
 		idb: {
 			cache: {
 				players: {

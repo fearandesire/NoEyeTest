@@ -147,3 +147,39 @@ test('WorkerConsole flags age25 before rollover and normal NET targets enter at2
 	);
 	assert.deepEqual(after.players[1], flags.players[1]);
 });
+
+test('negative PER contributes to moments without replacing the preseason ratings row', async () => {
+	const positive = player(1);
+	const negative = player(2, {
+		stats: [{ season: 2019, per: -5, gp: 82, min: 1968 }],
+	});
+	const result = await runScript([positive, negative]);
+	assert.deepEqual(result.ids, [1, 2]);
+	assert.equal(result.pool.per.mean, 5);
+	assert.deepEqual(result.players[1], negative);
+	assert.deepEqual(
+		result.writes.map((p) => p.pid),
+		[1],
+	);
+	assert.deepEqual(
+		keys.map((key) => result.writes[0].ratings.at(-1)[key]),
+		[50, 49, 49, 49, 50, 50, 49, 49, 50, 50, 49, 49, 49, 50, 50],
+	);
+});
+
+test('malformed identities and nonfinite PER never enter preparation or mutate ratings', async () => {
+	const input = [
+		player(1, { born: { year: 0 } }),
+		player(2, { born: { year: '1990' } }),
+		player(3, { born: { year: 1990.5 } }),
+		player(4, { tid: '-1' }),
+		player(5, { tid: null }),
+		player(6, { ratings: null }),
+		player(7, { stats: [{ season: 2019, per: Number.POSITIVE_INFINITY }] }),
+		player(8, { stats: [{ season: 2019, per: Number.NaN }] }),
+	];
+	const result = await runScript(input);
+	assert.deepEqual(result.ids, []);
+	assert.deepEqual(result.players, input);
+	assert.deepEqual(result.writes, []);
+});

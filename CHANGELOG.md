@@ -8,8 +8,11 @@
 - Age curve uses knees at 28 / 32 and a per-attribute shape (athleticism falls faster; touch holds)
 - Soft ceiling replaces the hard OVR 80 cap
 - Defenders get credit via STL% / BLK% / DBPM into dIQ, strength, and jump
-- Noise scales with minutes; pool z-scores use age-25+ players with PER ≠ 0 (C++ `load_players` parity), not only watched players
-- Under-25 watched players keep BBGM progs (ratings row is not wiped before the age gate)
+- Noise scales with minutes; pool z-scores use active/free-agent players entering age 25+ with valid birth data, nonempty ratings and finite nonzero PER from the last prior-season regular-season stint, not only watched players
+- Negative PER contributes to preparation but keeps BBGM progression; under-25, unwatched, inactive, drafted-last-season and insufficient-history players also retain their entire ratings history
+- Stale-only and playoff-only histories are excluded; trade rows use the last regular-season stint
+- Added full-script Node tests and read-only CI, pinned BBGM floor/OVR/random helpers, and 137 controlled-draw cases shared with the C++ tests
+- Preserved BBGM attribute flooring, inclusive Candidate god bonuses of 7–13, and the existing WorkerConsole age-25-before-preseason roster (normally entering NET at 26+)
 - News Feed shows per-attribute Δ instead of a prog-range pair
 
 ### Breaking (if/when published)
