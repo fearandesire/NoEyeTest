@@ -1,3 +1,23 @@
+## [4.3.1] - 2026-10-15
+
+> Full release. 4.3 replaces 3.2.x as the recommended script.
+
+### Fixed
+
+- News Feed Δ line showed only 12 changed ratings, so god progs always hid Strength and 3PT. It now shows all 14.
+
+### Changed
+
+- Dropped the opt-in and Candidate wording from the script header, README and tiers.md.
+- No change to how progs are calculated; 4.3.1 progs match 4.3.0 exactly.
+
+### Notes from the NET Lab review (deep mode, 200 × 10 seasons, 2025-26 NBA league)
+
+- God progs: about 5 per offseason, the same as 3.2.1.
+- Fewer stars pile up: 9.2 players at 75+ after 10 seasons vs 14.1 under 3.2.1.
+- Low-PER players are no longer crushed; last season's PER and BPM move progs about a third as much as in 3.2.1.
+- Progs vary more from run to run, and league average OVR drifts down about 2.3 over 10 seasons (3.2.1: 1.4).
+
 ## [4.3.0] - 2026-09-19
 
 > Opt-in release of progbox **`v4.3`**. Progbox keeps **`v3.2.1`** as its Published comparison baseline; league adoption remains explicit.

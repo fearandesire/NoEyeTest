@@ -1,6 +1,6 @@
 # NET 4.3.0 release verification
 
-4.3.0 is suitable for opt-in use. The corrected simulator and JavaScript agree on 137 controlled-draw cases. This establishes the tested progression rules; it does not promise identical random sequences or universal improvement for every league.
+4.3.0 is suitable for general use (released as 4.3.1 on 2026-10-15; 4.3.1 changes only the News Feed text and comments). The corrected simulator and JavaScript agree on 137 controlled-draw cases. This establishes the tested progression rules; it does not promise identical random sequences or universal improvement for every league.
 
 | Check | Evidence |
 |---|---|
