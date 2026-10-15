@@ -1,500 +1,669 @@
 /**
- * NoEyeTest: BBGM Prog Script | v3.2.0
- * This script is used to calculate the 'Prog Range' (PR) for a player, and adjust their progs accordingly.
- * A prog range is how low or high a player can progress in the off-season.
- * The prog range is calculated by taking the player's PER from the previous season
- * Currently, this is designed for players 26+
- * Please see the README on how to use this
+ * NoEyeTest: BBGM Prog Script | v4.3.1
+ *
+ * Port of progbox v4.3 (engine source v43_progression.hpp; compact CLI
+ * aliases like v43/v321 exist in progbox only). Two-pass: pool moments from
+ * active/free-agent player age ≥ 25 with valid ratings and PER ≠ 0, then
+ * progress watched players age 25+. Under-25 watched players keep BBGM progs.
+ *
+ * Production composite: 70% BPM + 30% PER. Soft ceiling (not hard OVR 80).
+ * Defenders get credit via STL%/BLK%/DBPM. RNG is Math.random() (no seed;
+ * BBGM has none).
+ *
+ * See README.md for how to run it.
  */
+
+// Attr index order = C++ ALL_ATTRS. BBGM keys: 2Pt→fg, 3Pt→tp, End→endu, Str→stre.
+const ATTR_KEYS = [
+	'diq',
+	'dnk',
+	'drb',
+	'endu',
+	'fg',
+	'ft',
+	'ins',
+	'jmp',
+	'oiq',
+	'pss',
+	'reb',
+	'spd',
+	'stre',
+	'tp',
+	'hgt',
+];
+
+const ATTR = {
+	dIQ: 0,
+	Dnk: 1,
+	Drb: 2,
+	End: 3,
+	TwoPt: 4,
+	FT: 5,
+	Ins: 6,
+	Jmp: 7,
+	oIQ: 8,
+	Pss: 9,
+	Reb: 10,
+	Spd: 11,
+	Str: 12,
+	ThreePt: 13,
+	Hgt: 14,
+};
+
+// v4.3: Config — verbatim from V43Progression::Config (progbox compact alias)
+const CONFIG = {
+	youngKnee: 28.0,
+	youthRate: 0.6,
+	oldKnee: 32.0,
+	oldRate: 0.6,
+	youthTalentK: 0.55,
+	youthTalentFloor: 0.3,
+	youthTalentCap: 1.75,
+	declineW: 0.12,
+	minResist: 0.5,
+	maxResist: 1.6,
+	prodWBpm: 0.7,
+	prodWPer: 0.3,
+	prodZCap: 3.5,
+	agePivot: 27.0,
+	// v4.3: ageShapeSlope[15] — index matches ATTR / ALL_ATTRS
+	ageShapeSlope: (() => {
+		const s = new Array(15).fill(0);
+		s[ATTR.Hgt] = 0.0;
+		s[ATTR.Spd] = -0.26;
+		s[ATTR.Jmp] = -0.26;
+		s[ATTR.Dnk] = -0.18;
+		s[ATTR.End] = -0.11;
+		s[ATTR.Reb] = -0.08;
+		s[ATTR.Str] = -0.06;
+		s[ATTR.Drb] = -0.05;
+		s[ATTR.Ins] = -0.02;
+		s[ATTR.TwoPt] = 0.07;
+		s[ATTR.Pss] = 0.06;
+		s[ATTR.ThreePt] = 0.08;
+		s[ATTR.FT] = 0.05;
+		s[ATTR.dIQ] = 0.01;
+		s[ATTR.oIQ] = 0.01;
+		return s;
+	})(),
+	nudgeGain: 1.7,
+	nudgeCap: 6.0,
+	noiseAmp: 1.6,
+	noiseRefMpg: 24.0,
+	noiseFloor: 8.0,
+	noiseMultCap: 1.8,
+	commonNoise: 1.4,
+	softCeil: 78.0,
+	ceilBand: 4.0,
+	regressMinK: 600.0,
+	regressAttK: 60.0,
+	effAttMin: 20.0,
+	minutesFloor: 8.0,
+	globalScale: 1.0,
+	// v4.3: god* = v3.2.1 values (progbox compact alias v321)
+	godYoungMax: 30,
+	godMinRating: 30,
+	godMaxRating: 61,
+	godMaxChance: 0.09,
+	godMinBonus: 7,
+	godMaxBonus: 13,
+};
 
 /**
- * @typedef {Object} ProgOptions
- * @property {number} min1 - First minimum divisor for progression calculation
- * @property {number} min2 - Second minimum subtractor for progression calculation
- * @property {number} max1 - First maximum divisor for progression calculation
- * @property {number} max2 - Second maximum subtractor for progression calculation
- * @property {number} hardMax - Maximum possible progression value
- * @property {number} [hardMin] - Minimum possible progression value
- * @property {number} ovr - Player's overall rating
- * @property {number} age - Player's age
+ * Creates a notification into the game's log.
+ * Fields: player, per, ovr, age, delta (attr→Δ map), godProg.
  */
+async function sendProgNotification(data) {
+	const { player, per, godProg, ovr, age, delta } = data || {};
+	const SZN = bbgm.g.get('season');
+	const seasonYr = SZN - 1;
+	if (!player) {
+		return;
+	}
+	const { pid, firstName, lastName, tid } = player;
+	if (!pid) {
+		return;
+	}
+	const notiTitle = godProg ? 'God Progged!<br/>Prog Info:' : 'Prog Info:';
+	const perFull = per != null ? Number(per).toFixed(2) : 'N/A';
+	const ageFull = age != null ? String(age) : 'N/A';
+	let deltaText = 'N/A';
+	if (delta && typeof delta === 'object') {
+		const parts = Object.entries(delta)
+			.filter(([, v]) => Math.abs(v) >= 0.05)
+			.map(([k, v]) => `${k}:${v >= 0 ? '+' : ''}${v.toFixed(1)}`)
+			.slice(0, 14);
+		deltaText = parts.length ? parts.join(' ') : '(flat)';
+	}
+	await bbgm.logEvent({
+		type: 'Progs',
+		text: `<a href="${bbgm.helpers.leagueUrl([
+			'player',
+			pid,
+		])}">\n${firstName} ${lastName} ${notiTitle}</a><br/><b>Δ:</b> ${deltaText}<br/><b>
+        PER:
+        </b> ${perFull}<br/><b>
+        Age:
+    </b> ${ageFull}<br/>OVR: ${ovr}<br/><b>${seasonYr}</b>`,
+		showNotification: true,
+		pids: [pid],
+		tids: [tid],
+		persistent: false,
+		score: 20,
+	});
+}
 
-/**
- * Configuration class containing static constants for the progression system.
- * @class
- */
-class Config {
-	/** @type {Object.<string, string>} Age range definitions for player categorization */
-	static AGE_RANGES = {
-		YOUNG: '25-30',
-		MID: '31-34',
-		OLD: '35+',
-	};
+function clamp(x, lo, hi) {
+	return Math.max(lo, Math.min(hi, x));
+}
 
-	/** @type {Object.<string, number>} Progression system limits and thresholds */
-	static PROGRESSION_LIMITS = {
-		MAX_OVR: 80,
-		MIN_RATING: 30,
-		MAX_RATING: 61,
-		MAX_GOD_PROG_CHANCE: 0.09,
-		MIN_GOD_PROG: 7,
-		MAX_GOD_PROG: 13,
-	};
+function zdiv(n, d) {
+	return d > 1e-6 ? n / d : 0.0;
+}
 
-	/**
-	 *  Used to control which skills are affected by NET prog adjustments
-	 *  @type {Object.<string, string[]>} Player skill attributes categorized by type
-	 *  */
-	static SKILL_KEYS = {
-		ALL: [
-			'diq',
-			'dnk',
-			'drb',
-			'endu',
-			'fg',
-			'ft',
-			'ins',
-			'jmp',
-			'oiq',
-			'pss',
-			'reb',
-			'spd',
-			'stre',
-			'tp',
-		],
-		PHYSICAL_OLD: ['spd', 'stre', 'jmp', 'endu'],
-		PHYSICAL_MID: ['spd', 'stre', 'jmp'],
-	};
+function tovRate(s) {
+	const poss = s.fga + 0.44 * s.fta + s.tov;
+	return poss > 1e-6 ? s.tov / poss : 0.0;
+}
 
-	/** @type {Object.<string, ProgOptions>} Progression ranges for different age groups */
-	static PROG_RANGES = {
-		'25-30': {
-			min1: 5,
-			min2: 7,
-			max1: 4,
-			max2: 2,
-			hardMax: 4,
-		},
-		'31-34': {
-			min1: 6,
-			min2: 7,
-			max1: 4,
-			max2: 3,
-			hardMax: 2,
-		},
-		'35+': {
-			min1: 6,
-			min2: 9,
-			hardMax: 0,
-		},
-	};
+function unitNoise() {
+	return Math.random() * 2 - 1;
+}
+
+function randIntInclusive(min, max) {
+	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 /**
- * Service class for handling BBGM notifications and logging events.
- * @class
+ * Last non-playoff season row for seasonYr → PlayerStats shape.
+ * Stale rows and playoff-only histories never supply a regular season.
  */
-class NotificationService {
-	/**
-	 * Sends a progression notification for a player.
-	 * @param {Object} data - The notification data
-	 * @param {Object} data.player - Player object containing pid, firstName, lastName, and tid
-	 * @param {Array<number>} data.progRange - The progression range [min, max]
-	 * @param {string} data.ageRange - The age category of the player
-	 * @param {number} data.per - Player Efficiency Rating
-	 * @param {boolean} data.godProg - Whether the player achieved a "god prog"
-	 * @param {number} data.ovr - Player's overall rating
-	 * @returns {Promise<void>}
-	 */
-	static async sendProgNotification(data) {
-		const { player, progRange, ageRange, per, godProg, ovr } = data || {};
-		const SZN = bbgm.g.get('season');
-		const seasonYr = SZN - 1;
-
-		if (!player || !player.pid) return;
-
-		const { pid, firstName, lastName, tid } = player;
-		const notiTitle = godProg ? 'God Progged!<br/>Prog Info:' : 'Prog Info:';
-		const ageRangeFull = ageRange || 'N/A';
-		const perFull = per ? per.toFixed(2) : 'N/A';
-
-		await bbgm.idb.cache.players.put(player);
-		await bbgm.logEvent({
-			type: 'Progs',
-			text: `<a href="${bbgm.helpers.leagueUrl(['player', pid])}">\n${firstName} ${lastName} ${notiTitle}</a><br/><b>Range:</b> ${JSON.stringify(progRange)}<br/><b>PER:</b> ${perFull}<br/><b>Age Group:</b> ${ageRangeFull}<br/>OVR: ${ovr}<br/><b>${seasonYr}</b>`,
-			showNotification: true,
-			pids: [pid],
-			tids: [tid],
-			persistent: false,
-			score: 20,
-		});
-	}
-
-	/**
-	 * Logs the total count of god progs for the current run.
-	 * @param {number} count - Number of god progs achieved
-	 * @returns {Promise<void>}
-	 */
-	static async logGodProgs(count) {
-		await bbgm.logEvent({
-			type: 'God Progs',
-			text: `God Prog Count This Run: ${count}`,
-			showNotification: true,
-			persistent: false,
-			score: 20,
-			pids: [0],
-		});
-	}
-}
-
-/**
- * Utility class providing helper functions for the progression system.
- * @class
- */
-class Utils {
-	/**
-	 * Generates a random integer between min and max (inclusive).
-	 * @param {number} min - Minimum value
-	 * @param {number} max - Maximum value
-	 * @returns {number} Random integer between min and max
-	 */
-	static randomInt(min, max) {
-		return Math.floor(Math.random() * (max - min + 1) + min);
-	}
-
-	/**
-	 * Determines the age range category for a player.
-	 * @param {number} age - Player's age
-	 * @returns {string} Age range category
-	 */
-	static getAgeRange(age) {
-		if (age >= 25 && age <= 30) return Config.AGE_RANGES.YOUNG;
-		if (age >= 31 && age <= 34) return Config.AGE_RANGES.MID;
-		return Config.AGE_RANGES.OLD;
-	}
-
-	/**
-	 * Calculates the average PER from player stats.
-	 * @param {Array<Object>} playerStats - Array of player stat objects
-	 * @returns {number} Average PER or 0 if no stats
-	 */
-	static calculatePER(playerStats) {
-		if (playerStats.length === 0) return 0;
-		const totalPer = playerStats.reduce((sum, stat) => sum + stat.per, 0);
-		return playerStats.length === 1
-			? Math.fround(playerStats[0].per)
-			: totalPer / playerStats.length;
-	}
-}
-
-/**
- * Calculator class for determining player progression ranges.
- * @class
- */
-class ProgressionCalculator {
-	/**
-	 * Calculates the progression range based on PER and other factors.
-	 * @param {number} per - Player Efficiency Rating
-	 * @param {ProgOptions} progOptions - Progression options and limits
-	 * @returns {Array<number>} Progression range [min, max]
-	 */
-	static getProgRange(per, progOptions) {
-		let min;
-		let max;
-		const { min1, min2, max1, max2, hardMin, hardMax, ovr, age } =
-			progOptions || {};
-
-		if (per <= 20 && age < 31) {
-			min = Math.ceil(per / 5) - 6;
-			max = Math.ceil(per / 4) - 1;
-		} else {
-			min = Math.ceil(per / min1) - min2;
-			max = Math.ceil(per / max1) - max2 || 2;
+function statsFor(p, seasonYr) {
+	const rows = p.stats || [];
+	let row = null;
+	for (let i = rows.length - 1; i >= 0; i--) {
+		const st = rows[i];
+		if (st.season === seasonYr && !st.playoffs) {
+			row = st;
+			break;
 		}
-
-		if (hardMin) min = hardMin;
-		if ((hardMax && max > hardMax) || max > hardMax) max = hardMax;
-
-		return ProgressionCalculator.adjustForOVRCap(min, max, ovr, age);
 	}
-
-	/**
-	 * Adjusts progression range based on overall rating cap.
-	 * @param {number} min - Minimum progression value
-	 * @param {number} max - Maximum progression value
-	 * @param {number} ovr - Player's overall rating
-	 * @param {number} age - Player's age
-	 * @returns {Array<number>} Adjusted progression range [min, max]
-	 */
-	static adjustForOVRCap(min, max, ovr, age) {
-		let adjustedMin = min;
-		let adjustedMax = max;
-		const ovrProgression = adjustedMax + ovr;
-		const flagLower = adjustedMin + ovr;
-
-		if (ovrProgression >= Config.PROGRESSION_LIMITS.MAX_OVR) {
-			if (ovr >= Config.PROGRESSION_LIMITS.MAX_OVR) {
-				adjustedMax = 0;
-				if (age > 30 && age < 35) adjustedMin = -10;
-				if (age >= 35) adjustedMin = -14;
-				if (age <= 30) {
-					const randomMin = Utils.randomInt(-2, 0);
-					if (randomMin < 0.02) adjustedMin = -2;
-				}
-				if (adjustedMin > adjustedMax) adjustedMin = 0;
-			} else {
-				adjustedMax = Config.PROGRESSION_LIMITS.MAX_OVR - ovr;
-				if (flagLower >= Config.PROGRESSION_LIMITS.MAX_OVR) adjustedMin = 0;
-			}
-		}
-
-		return [adjustedMin, adjustedMax];
+	if (!row) {
+		return null;
 	}
+	const per = Number(row.per) || 0;
+	if (!Number.isFinite(per) || per === 0) {
+		return null;
+	}
+	const gp = Number(row.gp) || 0;
+	const rd = (k) => Number(row[k]) || 0;
+	const pg = (k) => (gp > 0 ? rd(k) / gp : 0);
+	const minTotal = rd('min');
+	const minAvail = rd('minAvailable');
+	return {
+		per,
+		obpm: rd('obpm'),
+		dbpm: rd('dbpm'),
+		stlp: rd('stlp'),
+		blkp: rd('blkp'),
+		usgp: rd('usgp'),
+		astp: rd('astp'),
+		trbp: rd('trbp'),
+		orbp: rd('orbp'),
+		ortg: rd('ortg'),
+		fga: pg('fga'),
+		fta: pg('fta'),
+		tpa: pg('tpa'),
+		tp: pg('tp'),
+		ft: pg('ft'),
+		fgaAtRim: pg('fgaAtRim'),
+		fgAtRim: pg('fgAtRim'),
+		fgaLowPost: pg('fgaLowPost'),
+		fgLowPost: pg('fgLowPost'),
+		fgaMidRange: pg('fgaMidRange'),
+		fgMidRange: pg('fgMidRange'),
+		orb: pg('orb'),
+		tov: pg('tov'),
+		min: gp > 0 ? minTotal / gp : 0,
+		availability: minAvail > 0 ? Math.min(1, minTotal / minAvail) : 0,
+		gp,
+	};
 }
 
-/**
- * System for handling exceptional player progressions ("god progs").
- * @class
- */
-class GodProgSystem {
-	/** @type {number} Counter for god progs in current run */
-	static godProgCount = 0;
-
-	/**
-	 * Calculates the chance of a god prog based on overall rating.
-	 * @param {number} ovr - Player's overall rating
-	 * @returns {number} Probability of god prog (0-1)
-	 */
-	static calculateGodProgChance(ovr) {
-		const { MIN_RATING, MAX_RATING, MAX_GOD_PROG_CHANCE } =
-			Config.PROGRESSION_LIMITS;
-		let scalingFactor;
-
-		if (ovr < MIN_RATING) {
-			scalingFactor = 1.0;
-		} else if (ovr > MAX_RATING) {
-			scalingFactor = 0.01;
-		} else {
-			scalingFactor = 1.0 - (ovr - MIN_RATING) / (MAX_RATING - MIN_RATING);
-		}
-
-		return scalingFactor * MAX_GOD_PROG_CHANCE;
-	}
-
-	/**
-	 * Determines if a player achieves a god prog.
-	 * @param {number} age - Player's age
-	 * @param {number} ovr - Player's overall rating
-	 * @returns {Array<number>|null} God prog range or null if not achieved
-	 */
-	static godProg(age, ovr) {
-		if (age >= 30) return null;
-
-		const godProgChance = GodProgSystem.calculateGodProgChance(ovr);
-		if (Math.random() >= godProgChance) return null;
-
-		const { MIN_GOD_PROG, MAX_GOD_PROG } = Config.PROGRESSION_LIMITS;
-		const randProg = Utils.randomInt(MIN_GOD_PROG, MAX_GOD_PROG);
-		GodProgSystem.godProgCount++;
-
-		return [randProg, randProg];
-	}
-}
-
-/**
- * Main system for handling player progression calculations and applications.
- * @class
- */
-class PlayerProgressionSystem {
-	/**
-	 * Creates a new PlayerProgressionSystem instance.
-	 */
+// v4.3: Moments — reliability-weighted running mean/sd
+class Moments {
 	constructor() {
-		/** @type {typeof NotificationService} */
-		this.notificationService = NotificationService;
+		this.wsum = 0;
+		this.wx = 0;
+		this.wxx = 0;
+		this.mean = 0;
+		this.sd = 1;
 	}
-
-	/**
-	 * Processes progression for a single player.
-	 * @param {Object} player - Player object from BBGM
-	 * @param {number} seasonYr - Current season year
-	 * @returns {Promise<void>}
-	 */
-	async processPlayer(player, seasonYr) {
-		if (player.watch !== 1 || player.draft.year === seasonYr) return;
-
-		const playerStats = player.stats.filter(
-			(stat) => stat.season === seasonYr && stat.per !== 0 && !stat.playoffs,
-		);
-
-		const per = Utils.calculatePER(playerStats);
-		if (per === 0) {
-			await this.notificationService.sendProgNotification({
-				player: player.pid,
-				progRange: 'No PER located - Used BBGM Progs',
-			});
+	add(x, w) {
+		this.wsum += w;
+		this.wx += w * x;
+		this.wxx += w * x * x;
+	}
+	finalize() {
+		if (this.wsum <= 1e-9) {
+			this.mean = 0;
+			this.sd = 1;
 			return;
 		}
-
-		const age = bbgm.g.get('season') - player.born.year;
-		const ageRange = Utils.getAgeRange(age);
-
-		if (player.ratings.length <= 1) return;
-
-		player.ratings.pop();
-		bbgm.player.addRatingsRow(player);
-		const ratings = player.ratings.at(-1);
-		const ovr = ratings.ovr;
-
-		const progRange = await this.calculateProgression(
-			player,
-			age,
-			per,
-			ovr,
-			ageRange,
-		);
-		await this.applyProgressions(player, ratings, progRange, age);
-
-		await this.finalizePlayer(player);
+		this.mean = this.wx / this.wsum;
+		const v = this.wxx / this.wsum - this.mean * this.mean;
+		this.sd = v > 1e-9 ? Math.sqrt(v) : 1.0;
 	}
+}
 
-	/**
-	 * Calculates progression values for a player.
-	 * @param {Object} player - Player object
-	 * @param {number} age - Player's age
-	 * @param {number} per - Player Efficiency Rating
-	 * @param {number} ovr - Player's overall rating
-	 * @param {string} ageRange - Player's age category
-	 * @returns {Promise<Array<number>>} Progression range [min, max]
-	 */
-	async calculateProgression(player, age, per, ovr, ageRange) {
-		const progConfig = Config.PROG_RANGES[ageRange];
-		let progRange = ProgressionCalculator.getProgRange(per, {
-			...progConfig,
-			ovr,
-			age,
-		});
-
-		const godProgRange = GodProgSystem.godProg(age, ovr);
-		if (godProgRange) {
-			progRange = godProgRange;
-			await this.notificationService.sendProgNotification({
-				player,
-				progRange,
-				ageRange,
-				per,
-				ovr,
-				godProg: true,
-			});
-		} else {
-			await this.notificationService.sendProgNotification({
-				player,
-				progRange,
-				ageRange,
-				per,
-				ovr,
-			});
-		}
-
-		return progRange;
-	}
-
-	/**
-	 * Applies progression values to player ratings.
-	 * @param {Object} player - Player object
-	 * @param {Object} ratings - Player ratings object
-	 * @param {Array<number>} progRange - Progression range [min, max]
-	 * @param {number} age - Player's age
-	 * @returns {Promise<void>}
-	 */
-	async applyProgressions(player, ratings, progRange, age) {
-		const ageFlags = {
-			thirty: age >= 30,
-			twentyFive: age >= 25 && age < 30,
-		};
-
-		for (const key of Config.SKILL_KEYS.ALL) {
-			if (await this.shouldSkipProgression(key, ageFlags, progRange)) continue;
-
-			const prog = bbgm.random.randInt(...progRange);
-			if (await this.shouldSkipPhysicalProgression(key, ageFlags, prog, age))
-				continue;
-
-			ratings[key] = bbgm.player.limitRating(ratings[key] + prog);
-		}
-	}
-
-	/**
-	 * Checks if progression should be skipped for a skill.
-	 * @param {string} key - Skill key
-	 * @param {Object} ageFlags - Age-related flags
-	 * @param {Array<number>} progRange - Progression range
-	 * @returns {Promise<boolean>} Whether to skip progression
-	 */
-	async shouldSkipProgression(key, ageFlags, progRange) {
-		if (
-			!ageFlags.thirty ||
-			!Config.SKILL_KEYS.PHYSICAL_OLD.includes(key) ||
-			progRange[1] <= 0
-		) {
-			return false;
-		}
-
-		const oldProgPhys = Math.random() * 0.05 + 0.01;
-		if (Math.random() >= oldProgPhys) return true;
-
-		if (progRange[1] > 3) progRange[1] = 3;
-		return false;
-	}
-
-	/**
-	 * Checks if physical progression should be skipped.
-	 * @param {string} key - Skill key
-	 * @param {Object} ageFlags - Age-related flags
-	 * @param {number} prog - Progression value
-	 * @param {number} age - Player's age
-	 * @returns {Promise<boolean>} Whether to skip physical progression
-	 */
-	async shouldSkipPhysicalProgression(key, ageFlags, prog, age) {
-		if (
-			!ageFlags.twentyFive ||
-			!Config.SKILL_KEYS.PHYSICAL_MID.includes(key) ||
-			prog <= 0
-		) {
-			return false;
-		}
-
-		const ageFactor = 0.7 - (age - 25) * 0.1;
-		const probProgression = Math.max(ageFactor, 0);
-		return Math.random() > probProgression;
-	}
-
-	/**
-	 * Finalizes player updates after progression.
-	 * @param {Object} player - Player object
-	 * @returns {Promise<void>}
-	 */
-	async finalizePlayer(player) {
-		await bbgm.player.develop(player, 0);
-		await bbgm.player.updateValues(player);
-		await bbgm.idb.cache.players.put(player);
-	}
+function emptyPool() {
+	return {
+		usg: new Moments(),
+		ast: new Moments(),
+		trb: new Moments(),
+		orb: new Moments(),
+		stl: new Moments(),
+		blk: new Moments(),
+		obpm: new Moments(),
+		dbpm: new Moments(),
+		ortg: new Moments(),
+		per: new Moments(),
+		mpg: new Moments(),
+		avail: new Moments(),
+		bpm: new Moments(),
+		tovr: new Moments(),
+		rimVol: new Moments(),
+		postVol: new Moments(),
+		midVol: new Moments(),
+		tpVol: new Moments(),
+		rimPct: new Moments(),
+		postPct: new Moments(),
+		midPct: new Moments(),
+		tpPct: new Moments(),
+		ftPct: new Moments(),
+	};
 }
 
 /**
- * Compiles and applies progressions for all players.
- * @returns {Promise<void>}
+ * Pass 1: reliability-weighted moments over age ≥ 25 / PER ≠ 0 season rows.
  */
-async function compileProgs() {
-	const players = await bbgm.idb.cache.players.getAll();
-	const seasonYr = bbgm.g.get('season') - 1;
-	const progressionSystem = new PlayerProgressionSystem();
+function preparePool(statList) {
+	const pool = emptyPool();
+	if (!statList.length) {
+		return pool;
+	}
 
-	for (const player of players) {
-		await progressionSystem.processPlayer(player, seasonYr);
+	const accMin = (get, m) => {
+		for (const s of statList) {
+			if (s.min < CONFIG.minutesFloor) {
+				continue;
+			}
+			const tmin = s.min * s.gp;
+			m.add(get(s), tmin / (tmin + CONFIG.regressMinK));
+		}
+		m.finalize();
+	};
+
+	accMin((s) => s.usgp, pool.usg);
+	accMin((s) => s.astp, pool.ast);
+	accMin((s) => s.trbp, pool.trb);
+	accMin((s) => s.orbp, pool.orb);
+	accMin((s) => s.stlp, pool.stl);
+	accMin((s) => s.blkp, pool.blk);
+	accMin((s) => s.obpm, pool.obpm);
+	accMin((s) => s.dbpm, pool.dbpm);
+	accMin((s) => s.ortg, pool.ortg);
+	accMin((s) => s.per, pool.per);
+	accMin((s) => s.min, pool.mpg);
+	accMin((s) => s.availability, pool.avail);
+	accMin((s) => s.obpm + s.dbpm, pool.bpm);
+	accMin((s) => tovRate(s), pool.tovr);
+	accMin((s) => s.fgaAtRim, pool.rimVol);
+	accMin((s) => s.fgaLowPost, pool.postVol);
+	accMin((s) => s.fgaMidRange, pool.midVol);
+	accMin((s) => s.tpa, pool.tpVol);
+
+	const accEff = (pct, att, m) => {
+		for (const s of statList) {
+			const a = att(s) * s.gp;
+			if (a < CONFIG.effAttMin) {
+				continue;
+			}
+			m.add(pct(s), a / (a + CONFIG.regressAttK));
+		}
+		m.finalize();
+	};
+
+	accEff(
+		(s) => zdiv(s.fgAtRim, s.fgaAtRim),
+		(s) => s.fgaAtRim,
+		pool.rimPct,
+	);
+	accEff(
+		(s) => zdiv(s.fgLowPost, s.fgaLowPost),
+		(s) => s.fgaLowPost,
+		pool.postPct,
+	);
+	accEff(
+		(s) => zdiv(s.fgMidRange, s.fgaMidRange),
+		(s) => s.fgaMidRange,
+		pool.midPct,
+	);
+	accEff(
+		(s) => zdiv(s.tp, s.tpa),
+		(s) => s.tpa,
+		pool.tpPct,
+	);
+	accEff(
+		(s) => zdiv(s.ft, s.fta),
+		(s) => s.fta,
+		pool.ftPct,
+	);
+
+	return pool;
+}
+
+function shrink(raw, mean, sample, K) {
+	return (raw * sample + mean * K) / (sample + K);
+}
+
+function zRate(raw, m, totalMin) {
+	return (shrink(raw, m.mean, totalMin, CONFIG.regressMinK) - m.mean) / m.sd;
+}
+
+function zEff(raw, m, totalAtt) {
+	return (shrink(raw, m.mean, totalAtt, CONFIG.regressAttK) - m.mean) / m.sd;
+}
+
+function zscores(s, pool) {
+	const tmin = s.min * s.gp;
+	const att = (perGame) => perGame * s.gp;
+	return {
+		usg: zRate(s.usgp, pool.usg, tmin),
+		ast: zRate(s.astp, pool.ast, tmin),
+		trb: zRate(s.trbp, pool.trb, tmin),
+		orb: zRate(s.orbp, pool.orb, tmin),
+		stl: zRate(s.stlp, pool.stl, tmin),
+		blk: zRate(s.blkp, pool.blk, tmin),
+		obpm: zRate(s.obpm, pool.obpm, tmin),
+		dbpm: zRate(s.dbpm, pool.dbpm, tmin),
+		ortg: zRate(s.ortg, pool.ortg, tmin),
+		mpg: zRate(s.min, pool.mpg, tmin),
+		avail: zRate(s.availability, pool.avail, tmin),
+		tovr: zRate(tovRate(s), pool.tovr, tmin),
+		rimVol: zRate(s.fgaAtRim, pool.rimVol, tmin),
+		postVol: zRate(s.fgaLowPost, pool.postVol, tmin),
+		midVol: zRate(s.fgaMidRange, pool.midVol, tmin),
+		tpVol: zRate(s.tpa, pool.tpVol, tmin),
+		rimPct: zEff(zdiv(s.fgAtRim, s.fgaAtRim), pool.rimPct, att(s.fgaAtRim)),
+		postPct: zEff(
+			zdiv(s.fgLowPost, s.fgaLowPost),
+			pool.postPct,
+			att(s.fgaLowPost),
+		),
+		midPct: zEff(
+			zdiv(s.fgMidRange, s.fgaMidRange),
+			pool.midPct,
+			att(s.fgaMidRange),
+		),
+		tpPct: zEff(zdiv(s.tp, s.tpa), pool.tpPct, att(s.tpa)),
+		ftPct: zEff(zdiv(s.ft, s.fta), pool.ftPct, att(s.fta)),
+	};
+}
+
+function productionP(s, pool) {
+	const tmin = s.min * s.gp;
+	const P =
+		CONFIG.prodWBpm * zRate(s.obpm + s.dbpm, pool.bpm, tmin) +
+		CONFIG.prodWPer * zRate(s.per, pool.per, tmin);
+	return clamp(P, -CONFIG.prodZCap, CONFIG.prodZCap);
+}
+
+function globalSignal(age, P) {
+	const youthTalent = clamp(
+		1.0 + CONFIG.youthTalentK * P,
+		CONFIG.youthTalentFloor,
+		CONFIG.youthTalentCap,
+	);
+	const youthBase =
+		CONFIG.youthRate * Math.max(0.0, CONFIG.youngKnee - age) * youthTalent;
+	const declineBase = CONFIG.oldRate * Math.max(0.0, age - CONFIG.oldKnee);
+	const resist = clamp(
+		1.0 - CONFIG.declineW * P,
+		CONFIG.minResist,
+		CONFIG.maxResist,
+	);
+	return youthBase - declineBase * resist;
+}
+
+function gainFactor(ovr) {
+	return clamp(
+		(CONFIG.softCeil + CONFIG.ceilBand - ovr) / CONFIG.ceilBand,
+		0.0,
+		1.0,
+	);
+}
+
+function noiseMult(mpg) {
+	const m = Math.max(CONFIG.noiseFloor, mpg);
+	return Math.min(Math.sqrt(CONFIG.noiseRefMpg / m), CONFIG.noiseMultCap);
+}
+
+function statNudge(a, z) {
+	switch (a) {
+		case ATTR.dIQ:
+			return 0.4 * z.stl + 0.3 * z.blk + 0.3 * z.dbpm;
+		case ATTR.Dnk:
+			return 0.55 * z.rimPct + 0.3 * z.rimVol;
+		case ATTR.Drb:
+			return 0.4 * z.ast + 0.2 * z.usg - 0.3 * z.tovr;
+		case ATTR.End:
+			return 0.45 * z.mpg + 0.25 * z.avail;
+		case ATTR.TwoPt:
+			return 0.55 * z.midPct + 0.2 * z.midVol;
+		case ATTR.FT:
+			return 0.65 * z.ftPct;
+		case ATTR.Ins:
+			return 0.5 * z.postPct + 0.3 * z.postVol + 0.1 * z.orb;
+		case ATTR.Jmp:
+			return 0.35 * z.blk + 0.25 * z.orb + 0.2 * z.rimVol;
+		case ATTR.oIQ:
+			return 0.5 * z.obpm + 0.3 * z.ast + 0.1 * z.ortg;
+		case ATTR.Pss:
+			return 0.65 * z.ast + 0.15 * z.obpm - 0.2 * z.tovr;
+		case ATTR.Reb:
+			return 0.55 * z.trb + 0.25 * z.orb;
+		case ATTR.Spd:
+			return 0.25 * z.stl + 0.15 * z.ast;
+		case ATTR.Str:
+			return 0.35 * z.postVol + 0.3 * z.orb + 0.2 * z.dbpm;
+		case ATTR.ThreePt:
+			return 0.55 * z.tpPct + 0.25 * z.tpVol;
+		default:
+			return 0.0;
 	}
 }
 
-// Run the script
+function godChance(ovr) {
+	let scale;
+	if (ovr < CONFIG.godMinRating) {
+		scale = 1.0;
+	} else if (ovr > CONFIG.godMaxRating) {
+		scale = 0.01;
+	} else {
+		scale =
+			1.0 -
+			(ovr - CONFIG.godMinRating) / (CONFIG.godMaxRating - CONFIG.godMinRating);
+	}
+	return scale * CONFIG.godMaxChance;
+}
+
+/**
+ * Progress one watched player. age < 25 or per <= 0 → skip (BBGM progs stand).
+ * Returns { godProg, delta, ovr } or null if skipped.
+ */
+function progressPlayer(p, s, pool, ratings) {
+	const SZN = bbgm.g.get('season');
+	const age = SZN - p.born.year;
+	let ovr = ratings.ovr;
+
+	if (age < 25 || s.per <= 0) {
+		return null;
+	}
+
+	const delta = {};
+
+	// v4.3: god prog first (same chance curve)
+	if (age < CONFIG.godYoungMax) {
+		const chance = godChance(ovr);
+		if (Math.random() < chance) {
+			const bonus = randIntInclusive(CONFIG.godMinBonus, CONFIG.godMaxBonus);
+			for (let a = 0; a < 15; a++) {
+				if (a === ATTR.Hgt) {
+					continue;
+				}
+				const key = ATTR_KEYS[a];
+				const before = ratings[key];
+				ratings[key] = bbgm.player.limitRating(before + bonus);
+				delta[key] = ratings[key] - before;
+			}
+			ovr = bbgm.player.ovr(ratings);
+			ratings.ovr = ovr;
+			return { godProg: true, delta, ovr, age };
+		}
+	}
+
+	const P = productionP(s, pool);
+	const nmult = noiseMult(s.min);
+	const commonShock = unitNoise() * CONFIG.commonNoise * nmult;
+	const Gage = globalSignal(age, P) * CONFIG.globalScale;
+	const z = zscores(s, pool);
+	const gf = gainFactor(ovr);
+	const namp = CONFIG.noiseAmp * nmult;
+
+	for (let a = 0; a < 15; a++) {
+		if (a === ATTR.Hgt) {
+			continue;
+		}
+		const ageShape = CONFIG.ageShapeSlope[a] * (age - CONFIG.agePivot);
+		const nudge = clamp(
+			CONFIG.nudgeGain * statNudge(a, z),
+			-CONFIG.nudgeCap,
+			CONFIG.nudgeCap,
+		);
+		const L = ageShape + nudge;
+		const noise = unitNoise() * namp;
+		const base = a === ATTR.oIQ || a === ATTR.dIQ ? 0.0 : Gage;
+		let d = base + commonShock + L + noise;
+		if (d > 0.0) {
+			d *= gf;
+		}
+		const key = ATTR_KEYS[a];
+		const before = ratings[key];
+		ratings[key] = bbgm.player.limitRating(before + d);
+		delta[key] = ratings[key] - before;
+	}
+
+	ovr = bbgm.player.ovr(ratings);
+	ratings.ovr = ovr;
+	return { godProg: false, delta, ovr, age };
+}
+
+let godProgCount = 0;
+
+async function compileProgs() {
+	const players = await bbgm.idb.cache.players.getAll();
+	const SZN = bbgm.g.get('season');
+	const seasonYr = SZN - 1;
+
+	// Preparation and mutation share structural eligibility. Negative PER is pool-only.
+	const eligible = players.filter(
+		(p) =>
+			Number.isInteger(p.tid) &&
+			p.tid >= -1 &&
+			Number.isInteger(p.born?.year) &&
+			p.born.year > 0 &&
+			SZN - p.born.year >= 25 &&
+			Array.isArray(p.ratings) &&
+			p.ratings.length > 0,
+	);
+	const poolStats = [];
+	for (const p of eligible) {
+		const s = statsFor(p, seasonYr);
+		if (s) {
+			poolStats.push(s);
+		}
+	}
+	const pool = preparePool(poolStats);
+
+	// Pass 2: progress watched 25+ only (under-25 keep BBGM progs untouched)
+	for (const p of eligible) {
+		if (p.watch !== 1 || p.draft?.year === seasonYr) {
+			continue;
+		}
+
+		const age = SZN - p.born.year;
+		if (age < 25) {
+			continue;
+		}
+
+		const s = statsFor(p, seasonYr);
+		if (!s || s.per <= 0) {
+			await sendProgNotification({
+				player: p,
+				per: s?.per ?? 0,
+				ovr: p.ratings?.at?.(-1)?.ovr,
+				age,
+				delta: null,
+				godProg: false,
+			});
+			continue;
+		}
+
+		if (p.ratings.length < 2) {
+			continue;
+		}
+
+		// Undo BBGM's just-applied ratings row; rebuild from prior season base
+		p.ratings.pop();
+		bbgm.player.addRatingsRow(p);
+		const ratings = p.ratings.at(-1);
+
+		const result = progressPlayer(p, s, pool, ratings);
+		if (!result) {
+			await bbgm.idb.cache.players.put(p);
+			continue;
+		}
+
+		if (result.godProg) {
+			godProgCount += 1;
+		}
+
+		await sendProgNotification({
+			player: p,
+			per: s.per,
+			ovr: result.ovr,
+			age: result.age,
+			delta: result.delta,
+			godProg: result.godProg,
+		});
+
+		await bbgm.player.develop(p, 0);
+		await bbgm.player.updateValues(p);
+		await bbgm.idb.cache.players.put(p);
+	}
+}
+
+const logGodProgs = async () => {
+	await bbgm.logEvent({
+		type: 'God Progs',
+		text: `God Prog Count This Run: ${godProgCount}`,
+		showNotification: true,
+		persistent: false,
+		score: 20,
+		pids: [0],
+	});
+};
+
 await compileProgs();
-await NotificationService.logGodProgs(GodProgSystem.godProgCount);
+await logGodProgs();
