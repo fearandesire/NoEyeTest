@@ -2,9 +2,7 @@
 
 **NoEyeTest** (NET) is a Browser Basketball GM progression script.
 
-**4.3.0** is an opt-in release of the progbox **`v4.3`** model. League owners choose when to adopt it.
-
-Progbox keeps **NET 3.2 / `v3.2.1`** as its Published comparison baseline; **`v4.3`** remains the Candidate catalog entry. Releasing NET does not change that comparison pointer.
+**4.3.1** is the current release. It ports the progbox **`v4.3`** model and replaces 3.2.x.
 
 ## Preliminary Information
 
@@ -30,11 +28,11 @@ And a player who isn't
 **_News Feed Post-NET:_**
 ![Prog Range Information](https://i.imgur.com/TCjuz3E.png)
 
-### How 4.3.0 decides progs
+### How 4.3 decides progs
 
 See [tiers.md](tiers.md) for the short story: production drivers, age curve, soft ceiling, god progs. There is no fixed `[min, max]` prog-range table in 4.3.
 
-## Additional Information (4.3.0)
+## Additional Information (4.3)
 
 - Under 30: rare god prog (OVR-scaled, max ~9%, flat +7 to +13 on every rating except height)
 - Soft ceiling: positive gains taper from OVR ~78 toward ~82; negative movement is not tapered the same way
@@ -47,7 +45,7 @@ See [tiers.md](tiers.md) for the short story: production drivers, age curve, sof
 
 Run once in preseason after BBGM progression: if the entering season is `S`, NET reads stats from `S-1`, computes age as `S - born.year`, removes the just-added BBGM ratings row only for eligible players, and rebuilds from the previous row. It selects the **last regular-season stint** for `S-1`; playoffs, stale seasons and a zero-PER last stint cannot supply a replacement. Published NET 3.2 at commit `972f9d3c08476bd91276ea7327b0972dfba3a382` instead averages all nonzero regular-season PER rows for `S-1`.
 
-BBGM clamps attributes to 0–100 and **floors** fractional ratings before deriving OVR. The simulator must follow that integer contract; older fractional C++ outputs are historical research results, not proof of JS runtime parity. Candidate god bonuses are inclusive **7–13**; the pinned Published script uses **7–12**.
+BBGM clamps attributes to 0–100 and **floors** fractional ratings before deriving OVR. The simulator must follow that integer contract; older fractional C++ outputs are historical research results, not proof of JS runtime parity. 4.3 god bonuses are inclusive **7–13**; 3.2.x used **7–12**.
 
 ```sh
 pnpm install --frozen-lockfile
@@ -63,4 +61,4 @@ Default BBGM from ~26 onward leans hard into random regression. One off-season c
 
 #### Credits
 
-The idea and certain elements derive from TheProgMaestro. NET 3.2.x tracks progbox **`v3.2.1`**. The 4.3.0 release ports progbox **`v4.3`** (@akshayexists upstream).
+The idea and certain elements derive from TheProgMaestro. NET 3.2.x tracks progbox **`v3.2.1`**. The 4.3 releases port progbox **`v4.3`** (@akshayexists upstream).

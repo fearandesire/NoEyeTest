@@ -1,5 +1,5 @@
 /**
- * NoEyeTest: BBGM Prog Script | v4.3.0 (opt-in release)
+ * NoEyeTest: BBGM Prog Script | v4.3.1
  *
  * Port of progbox v4.3 (engine source v43_progression.hpp; compact CLI
  * aliases like v43/v321 exist in progbox only). Two-pass: pool moments from
@@ -10,7 +10,7 @@
  * Defenders get credit via STL%/BLK%/DBPM. RNG is Math.random() (no seed;
  * BBGM has none).
  *
- * Progbox Published comparison remains 3.2.x ↔ v3.2.1. See README.md to opt in.
+ * See README.md for how to run it.
  */
 
 // Attr index order = C++ ALL_ATTRS. BBGM keys: 2Pt→fg, 3Pt→tp, End→endu, Str→stre.
@@ -132,7 +132,7 @@ async function sendProgNotification(data) {
 		const parts = Object.entries(delta)
 			.filter(([, v]) => Math.abs(v) >= 0.05)
 			.map(([k, v]) => `${k}:${v >= 0 ? '+' : ''}${v.toFixed(1)}`)
-			.slice(0, 12);
+			.slice(0, 14);
 		deltaText = parts.length ? parts.join(' ') : '(flat)';
 	}
 	await bbgm.logEvent({

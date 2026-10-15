@@ -183,3 +183,14 @@ test('malformed identities and nonfinite PER never enter preparation or mutate r
 	assert.deepEqual(result.players, input);
 	assert.deepEqual(result.writes, []);
 });
+
+test('god prog News Feed line lists all 14 changed ratings', async () => {
+	const result = await runScript([player(1, { born: { year: 1993 } })], {
+		draws: [0],
+	});
+	const progs = result.events.filter((e) => e.type === 'Progs');
+	assert.equal(progs.length, 1);
+	assert.match(progs[0].text, /God Progged/);
+	for (const key of keys.filter((k) => k !== 'hgt'))
+		assert.match(progs[0].text, new RegExp(`\\b${key}:\\+`));
+});

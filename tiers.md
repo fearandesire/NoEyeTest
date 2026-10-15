@@ -1,8 +1,8 @@
-# How 4.3.0 progresses players
+# How 4.3 progresses players
 
-**4.3.0 is an opt-in release** of progbox **`v4.3`**. Progbox retains NET **3.2.x** ↔ **`v3.2.1`** as its Published comparison baseline.
+NET **4.3** ports progbox **`v4.3`** and replaces 3.2.x.
 
-The candidate drops the old age-band prog-range tables. Dexter `/p` still shows a "prog range" from the 3.x formulas — that display is stale until Dexter is updated. Trust the News Feed Δ line after you run the candidate.
+4.3 drops the old age-band prog-range tables. Dexter `/p` still shows a "prog range" from the 3.x formulas — that display is stale until Dexter is updated. Trust the News Feed Δ line after you run NET.
 
 ## What drives a prog
 
@@ -25,4 +25,4 @@ Worker Console flags age 25+ before preseason, normally entering NET at 26+ afte
 
 Preparation requires active/free-agent status, integer team ID and positive integer birth year, nonempty ratings, entering age 25+, and finite nonzero PER from the last prior-season regular row. Progression additionally requires `watch === 1`, positive PER, not drafted in the prior season, and at least two ratings rows. Negative PER affects pool moments but never triggers progression. All skip guards run before removing a ratings row.
 
-NET restores the prior ratings base after BBGM adds the preseason row. Attributes clamp to 0–100 and floor before the pinned BBGM OVR calculation. Stale-only and playoff-only histories are excluded. Candidate uses the last regular-season trade stint; Published averages nonzero prior-season regular PER rows. See the README for source pins and the distinction between local tests and live acceptance.
+NET restores the prior ratings base after BBGM adds the preseason row. Attributes clamp to 0–100 and floor before the pinned BBGM OVR calculation. Stale-only and playoff-only histories are excluded. 4.3 uses the last regular-season trade stint; 3.2.x averaged nonzero prior-season regular PER rows. See the README for source pins and the distinction between local tests and live acceptance.
