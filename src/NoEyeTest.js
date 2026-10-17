@@ -195,6 +195,16 @@ function baselineRatings(player, seasonYr) {
 	return player.ratings.find((r) => r.season === seasonYr) || null;
 }
 
+// Skip malformed player records instead of throwing mid-run.
+function validPlayer(p) {
+	return (
+		Number.isInteger(p.born?.year) &&
+		p.born.year > 0 &&
+		Number.isInteger(p.tid) &&
+		Array.isArray(p.ratings)
+	);
+}
+
 function tovRate(s) {
 	const poss = s.fga + 0.44 * s.fta + s.tov; // BBGM USG% basis
 	return poss > 1e-6 ? s.tov / poss : 0;
@@ -507,7 +517,8 @@ function progressPlayer(player, s, pool, season) {
 	const seasonYr = season - 1;
 	const src = baselineRatings(player, seasonYr); // input: pre-progression row
 	const dst = player.ratings.at(-1); // output: live row BBGM already progressed
-	if (!src) return { changed: false, god: false }; // no baseline -> skip safely
+	// no baseline, or no new season row yet -> skip safely
+	if (!src || src === dst) return { changed: false, god: false };
 
 	const age = season - player.born.year;
 	const ovr = ovrOf(src); // god/ceiling keyed off the baseline OVR
@@ -678,6 +689,7 @@ async function main() {
 	// --- Pass 0: auto-flag who NoEyeTest will progress (folded-in preamble) ---
 	if (FLAG_WATCH) {
 		for (const p of players) {
+			if (!validPlayer(p)) continue;
 			const age = season - p.born.year;
 			p.watch =
 				age >= WATCH_MIN_AGE && p.tid >= WATCH_MIN_TID ? WATCH_VALUE : 0;
@@ -688,6 +700,7 @@ async function main() {
 	const statsByPid = new Map();
 	const allStats = [];
 	for (const p of players) {
+		if (!validPlayer(p)) continue;
 		const rows = (p.stats || []).filter(
 			(st) => st.season === seasonYr && !st.playoffs,
 		);
@@ -703,6 +716,7 @@ async function main() {
 	let godProgCount = 0;
 	let progCount = 0;
 	for (const p of players) {
+		if (!validPlayer(p)) continue;
 		if (!PROGRESS_ALL && p.watch !== WATCH_VALUE) continue;
 		if (p.draft.year === seasonYr) continue; // skip rookies drafted this season
 		const s = statsByPid.get(p.pid);
