@@ -1,5 +1,11 @@
 # Regression fixture provenance
 
+> **4.4:** the Candidate (`v43`-labelled) cases now track
+> `src/NoEyeTest.js` 4.4 and no longer match progbox's copy. After an
+> intentional tuning change, run
+> `node tests/helpers/regenerate-candidate-goldens.cjs`; it reruns every
+> Candidate case through the full script and leaves Published cases untouched.
+
 `net_parity_cases.json` is byte-identical to progbox's
 `api/vendor/progbox_cpp/tests/net_parity_cases.json` (SHA-256
 `27420ff2a5882239e6a7db6a9933d486740834536001825ca8413b14bf42e318`).

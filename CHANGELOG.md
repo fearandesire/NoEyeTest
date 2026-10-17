@@ -1,3 +1,22 @@
+## [4.4.0] - 2026-10-17
+
+### Changed
+
+- Retuned the model: youngKnee 28 → 27, oldRate 0.6 → 0.9, maxResist 1.6 → 1.2, nudgeGain 1.7 → 1.4, soft ceiling 78 → 75 with a 7-point band (was 4).
+- Ratings are rounded instead of floored after each prog.
+- The watch-flagging preamble is built in (`FLAG_WATCH`): every player 25+ on a team or in free agency is progressed, so the separate pre-run is no longer needed.
+- The stat pool uses every player with last-season stats (all ages), and combines rows for traded players, weighted by minutes.
+- Availability is games played / games in the season.
+- News Feed shows OVR before → after and a production hint. The per-rating Δ line from 4.3.1 is gone.
+
+### Fixed
+
+- Malformed player records (bad `born`, `tid` or `ratings`) and players without a new season ratings row are skipped instead of crashing or overwriting the baseline row, as in 4.3.
+
+### Tests
+
+- Behavioral tests describe 4.4 rules (auto-flagging, all-age pool, combined traded rows, rounding). Candidate parity goldens are regenerated from 4.4.0; rerun `node tests/helpers/regenerate-candidate-goldens.cjs` after retuning.
+
 ## [4.3.1] - 2026-10-15
 
 > Full release. 4.3 replaces 3.2.x as the recommended script.

@@ -96,7 +96,7 @@ async function runScript(
 		return value;
 	};
 	const bbgm = {
-		g: { get: (key) => ({ season, phase: 0 })[key] },
+		g: { get: (key) => ({ season, phase: 0, numGames: 82 })[key] },
 		random: { randInt: randomHelper(math) },
 		idb: {
 			cache: {
@@ -129,11 +129,13 @@ async function runScript(
 	// Observe preparation at its call boundary. The complete browser source runs unchanged.
 	const observer = observe
 		? `
-		const originalStatsFor = statsFor;
+		const rowOwners = new WeakMap();
+		for (const p of fixturePlayers) for (const row of p.stats || []) rowOwners.set(row, p.pid);
 		const owners = new WeakMap();
-		statsFor = (p, year) => { const s = originalStatsFor(p, year); if (s) owners.set(s, p.pid); return s; };
-		const originalPreparePool = preparePool;
-		preparePool = (stats) => { const pool = originalPreparePool(stats); capture(stats.map(s => owners.get(s)), pool); return pool; };
+		const originalAdaptStats = adaptStats;
+		adaptStats = (rows, numGames) => { const s = originalAdaptStats(rows, numGames); if (s) owners.set(s, rowOwners.get(rows[0])); return s; };
+		const originalBuildPool = buildPool;
+		buildPool = (stats) => { const pool = originalBuildPool(stats); capture(stats.map(s => owners.get(s)), pool); return pool; };
 	`
 		: '';
 	const source = fs.readFileSync(path.join(root, file), 'utf8');
@@ -141,6 +143,7 @@ async function runScript(
 		`(async () => { ${observer}\n${source}\n})()`,
 		{
 			bbgm,
+			fixturePlayers: players,
 			Math: math,
 			console,
 			capture: (ids, pool) => {

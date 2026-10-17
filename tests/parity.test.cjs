@@ -3,63 +3,9 @@ const { createHash } = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { test } = require('node:test');
-const { runScript, player, keys, ovr } = require('./helpers/run-script.cjs');
+const { runScript, player, keys } = require('./helpers/run-script.cjs');
+const { inputFor } = require('./helpers/parity-input.cjs');
 const fixtures = require('./fixtures/net_parity_cases.json');
-
-function rawStats(stats) {
-	const row = { ...stats, season: 2019, playoffs: false };
-	for (const key of [
-		'min',
-		'fga',
-		'fta',
-		'tpa',
-		'tp',
-		'ft',
-		'fgaAtRim',
-		'fgAtRim',
-		'fgaLowPost',
-		'fgLowPost',
-		'fgaMidRange',
-		'fgMidRange',
-		'orb',
-		'tov',
-	])
-		row[key] *= stats.gp;
-	row.minAvailable = stats.availability > 0 ? row.min / stats.availability : 0;
-	return row;
-}
-function inputFor(c) {
-	const ratings = Object.fromEntries(
-		keys.map((key, index) => [key, c.attrs[index]]),
-	);
-	ratings.ovr = ovr(ratings);
-	const target = player(1, {
-		born: { year: 2020 - c.age },
-		stats: [rawStats(c.stats)],
-		ratings: [
-			{ ...ratings, season: 2019 },
-			{ ...ratings, season: 2020 },
-		],
-	});
-	if (c.version === 'v321') return [target];
-	const remaining = structuredClone(c.pool);
-	if (c.age >= 25 && c.stats.per !== 0) {
-		const index = remaining.findIndex(
-			(stats) => JSON.stringify(stats) === JSON.stringify(c.stats),
-		);
-		assert.ok(
-			index >= 0,
-			'a progressing target must occur in its own preparation pool',
-		);
-		remaining.splice(index, 1);
-	}
-	return [
-		target,
-		...remaining.map((stats, index) =>
-			player(index + 2, { watch: 0, stats: [rawStats(stats)] }),
-		),
-	];
-}
 
 test('shared goldens pin both script source hashes and BBGM revision', () => {
 	for (const [file, hash] of [
