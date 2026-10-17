@@ -1,5 +1,5 @@
 /**
- * NoEyeTest: BBGM Prog Script | v4.4.0-draft
+ * NoEyeTest: BBGM Prog Script | v4.4.0
  * Port of the v4.3 engine (v43_progression.hpp) to the BBGM worker console.
  *
  * WHAT THIS DOES (differs a lot from v3.2.0):
@@ -559,12 +559,6 @@ function progressPlayer(player, s, pool, season) {
 	const gf = gainFactor(ovr);
 	const namp = CFG.noiseAmp * nmult;
 
-	// --- debug accumulators (delete when done tuning) ---
-	let dbgAgeShape = 0;
-	let dbgNudge = 0;
-	let dbgNoise = 0;
-	let dbgDelta = 0;
-
 	for (let a = 0; a < 15; a++) {
 		if (a === IDX.Hgt) continue;
 		const ageShape = AGE_SLOPE[a] * (age - CFG.agePivot);
@@ -580,11 +574,6 @@ function progressPlayer(player, s, pool, season) {
 		let delta = base + commonShock + L + noise;
 		if (delta > 0) delta *= gf; // one-sided soft ceiling
 		attrs[a] = clamp(attrs[a] + delta, 0, 100);
-
-		dbgAgeShape += ageShape;
-		dbgNudge += nudge;
-		dbgNoise += noise;
-		dbgDelta += delta;
 	}
 
 	writeBack();
@@ -592,15 +581,6 @@ function progressPlayer(player, s, pool, season) {
 		changed: true,
 		god: false,
 		P,
-		Gage,
-		dbg: {
-			gf,
-			commonShock,
-			ageShape: dbgAgeShape,
-			nudge: dbgNudge,
-			noise: dbgNoise,
-			total: dbgDelta,
-		},
 	};
 }
 
@@ -640,23 +620,9 @@ async function sendProgNotification(
 			: `<br/><b>Season:</b> ${prodHint(res.P)}`;
 	}
 
-	// --- temporary tuning breakdown (delete this block + the dbg accumulators
-	//     in progressPlayer when finished) ---
-	let dbg = '';
-	if (res.dbg) {
-		const d = res.dbg;
-		const f = (x) => (x >= 0 ? '+' : '') + x.toFixed(1);
-		dbg =
-			`<br/><b>Gage:</b> ${f(res.Gage)}  <b>gf:</b> ${d.gf.toFixed(2)}` +
-			`<br/><b>Σnudge:</b> ${f(d.nudge)}  <b>ΣageShape:</b> ${f(d.ageShape)}` +
-			`<br/><b>shock/attr:</b> ${f(d.commonShock)}  <b>Σnoise:</b> ${f(d.noise)}` +
-			`<br/><b>Σdelta:</b> ${f(d.total)}`;
-	}
-	// --- end tuning block ---
-
 	await bbgm.logEvent({
 		type: 'Progs',
-		text: `<a href="${bbgm.helpers.leagueUrl(['player', pid])}">${firstName} ${lastName} ${title}</a><br/><b>OVR:</b> ${before} → ${after} (${sign}${diff})${hint}${dbg}<br/><b>PER:</b> ${s.per.toFixed(2)}<br/><b>Age:</b> ${age}<br/><b>${seasonYr}</b>`,
+		text: `<a href="${bbgm.helpers.leagueUrl(['player', pid])}">${firstName} ${lastName} ${title}</a><br/><b>OVR:</b> ${before} → ${after} (${sign}${diff})${hint}<br/><b>PER:</b> ${s.per.toFixed(2)}<br/><b>Age:</b> ${age}<br/><b>${seasonYr}</b>`,
 		showNotification: true,
 		pids: [pid],
 		tids: [tid],

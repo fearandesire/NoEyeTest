@@ -2,7 +2,7 @@
 
 **NoEyeTest** (NET) is a Browser Basketball GM progression script.
 
-**4.3.1** is the current release. It ports the progbox **`v4.3`** model and replaces 3.2.x.
+**4.4.0** is the current release. It retunes the progbox **`v4.3`** model and replaces 4.3.x.
 
 ## Preliminary Information
 
@@ -16,14 +16,12 @@ And a player who isn't
 
 ![A player who is not flagged](https://i.imgur.com/7CvLHUp.png)
 
-- [**Worker Console**](src/WorkerConsole.js) runs **before** progs each season.
-- Worker Console flags players aged **25+ before preseason**. After BBGM increments the season, these normally enter NET at **26+**. NET itself accepts manually watched entering-age-25 players; it does not change the Worker Console roster.
+- Since 4.4, NET flags players itself: everyone aged **25+** on a team or in free agency. [**Worker Console**](src/WorkerConsole.js) is no longer needed. Set `FLAG_WATCH = false` in the script to keep flagging players by hand.
 
 ## Instructions
 
-1. Before progs, run [**Worker Console**](src/WorkerConsole.js) in the _Danger Zone_
-2. After progs (aka, in the `Preseason` phase), run [**NET**](src/NoEyeTest.js) in the _Danger Zone_
-3. Check the *News Feed* for Δ / PER / age / OVR lines on watched players
+1. After progs (aka, in the `Preseason` phase), run [**NET**](src/NoEyeTest.js) in the _Danger Zone_
+2. Check the *News Feed* for OVR / PER / age lines on progressed players
 
 **_News Feed Post-NET:_**
 ![Prog Range Information](https://i.imgur.com/TCjuz3E.png)

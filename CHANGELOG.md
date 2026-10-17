@@ -1,6 +1,4 @@
-## [4.4.0-draft.1] - Unreleased
-
-> Work in progress. Not a release.
+## [4.4.0] - 2026-10-17
 
 ### Changed
 
@@ -9,7 +7,7 @@
 - The watch-flagging preamble is built in (`FLAG_WATCH`): every player 25+ on a team or in free agency is progressed, so the separate pre-run is no longer needed.
 - The stat pool uses every player with last-season stats (all ages), and combines rows for traded players, weighted by minutes.
 - Availability is games played / games in the season.
-- News Feed shows OVR before → after, a production hint, and a temporary tuning breakdown (to be removed before release). The 4.3.1 per-rating Δ line is not in this draft.
+- News Feed shows OVR before → after and a production hint. The per-rating Δ line from 4.3.1 is gone.
 
 ### Fixed
 
@@ -17,7 +15,7 @@
 
 ### Tests
 
-- Behavioral tests describe 4.4 rules (auto-flagging, all-age pool, combined traded rows, rounding). Candidate parity goldens are regenerated from this draft; rerun `node tests/helpers/regenerate-candidate-goldens.cjs` after retuning.
+- Behavioral tests describe 4.4 rules (auto-flagging, all-age pool, combined traded rows, rounding). Candidate parity goldens are regenerated from 4.4.0; rerun `node tests/helpers/regenerate-candidate-goldens.cjs` after retuning.
 
 ## [4.3.1] - 2026-10-15
 

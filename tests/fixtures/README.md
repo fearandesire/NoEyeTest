@@ -1,7 +1,7 @@
 # Regression fixture provenance
 
-> **4.4.0-draft:** the Candidate (`v43`-labelled) cases now track
-> `src/NoEyeTest.js` 4.4.0-draft and no longer match progbox's copy. After an
+> **4.4:** the Candidate (`v43`-labelled) cases now track
+> `src/NoEyeTest.js` 4.4 and no longer match progbox's copy. After an
 > intentional tuning change, run
 > `node tests/helpers/regenerate-candidate-goldens.cjs`; it reruns every
 > Candidate case through the full script and leaves Published cases untouched.
