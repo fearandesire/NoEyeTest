@@ -1,3 +1,16 @@
+## [4.4.0-draft.1] - Unreleased
+
+> Work in progress. Not a release; tests still pin 4.3 behaviour.
+
+### Changed
+
+- Retuned the model: youngKnee 28 → 27, oldRate 0.6 → 0.9, maxResist 1.6 → 1.2, nudgeGain 1.7 → 1.4, soft ceiling 78 → 75 with a 7-point band (was 4).
+- Ratings are rounded instead of floored after each prog.
+- The watch-flagging preamble is built in (`FLAG_WATCH`): every player 25+ on a team or in free agency is progressed, so the separate pre-run is no longer needed.
+- The stat pool uses every player with last-season stats (all ages), and combines rows for traded players, weighted by minutes.
+- Availability is games played / games in the season.
+- News Feed shows OVR before → after, a production hint, and a temporary tuning breakdown (to be removed before release).
+
 ## [4.3.1] - 2026-10-15
 
 > Full release. 4.3 replaces 3.2.x as the recommended script.
